@@ -98,8 +98,13 @@ def collect_bundled_datas() -> list[tuple[str, str]]:
 
     if not _CC_DIR.exists():
         sys.exit(f"[오류] carbon_calculator 패키지를 찾을 수 없습니다: {_CC_DIR}")
-    for py in sorted(_CC_DIR.glob("*.py")):
-        datas.append((str(py), "bundled_src/carbon_calculator"))
+    # 하위 기능 패키지(tree_simulation 등)도 상대 디렉터리를 보존해 재귀적으로 번들한다.
+    for py in sorted(_CC_DIR.rglob("*.py")):
+        rel_parent = py.parent.relative_to(_CC_DIR).as_posix()
+        dest = "bundled_src/carbon_calculator"
+        if rel_parent != ".":
+            dest += f"/{rel_parent}"
+        datas.append((str(py), dest))
 
     return datas
 

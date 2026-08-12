@@ -183,8 +183,7 @@ block_cipher = None
 # ── PyQt5 바이너리: 전체 수집 후 미사용 DLL 제거 ─────────────────────────────
 # collect_dynamic_libs 는 PyQt5 패키지 디렉터리 내 DLL 만 반환 (2-튜플).
 _EXCL_DLL = {
-    'opengl32sw.dll', 'd3dcompiler_47.dll',
-    'libglesv2.dll', 'libegl.dll',
+    # OpenGL/EGL 계열 DLL은 VTK/PyVista 3D 렌더링 fallback에 필요할 수 있어 보존한다.
     'qt5quick.dll', 'qt5qml.dll', 'qt5qmlmodels.dll', 'qt5qmlworkerscript.dll',
     'qt5designer.dll', 'qt5xmlpatterns.dll',
     'qt5location.dll', 'qt5multimedia.dll', 'qt5multimediaquick.dll',
@@ -242,6 +241,13 @@ a = Analysis(
             'PIL.Image',
             'PIL.PngImagePlugin',
             'PIL.ImageDraw',
+            'qtpy',
+            'pyvista',
+            'pyvistaqt',
+            'vtkmodules.qt.QVTKRenderWindowInteractor',
+            'vtkmodules.vtkInteractionStyle',
+            'vtkmodules.vtkRenderingFreeType',
+            'vtkmodules.vtkRenderingOpenGL2',
         ]
     ),
     hookspath=[],

@@ -40,6 +40,9 @@ from .widgets import (
     LinearGauge, NoWheelComboBox, NoWheelDoubleSpinBox, NoWheelSpinBox, ResultTable,
     SearchableComboBox,
 )
+from .tree_simulation.models import VisualizationInputGroup
+from .tree_simulation.snapshot import build_snapshot, input_fingerprint
+from .tree_simulation.visualization_tab import VegetationVisualizationTab
 
 
 # 한 행의 계산 결과 + 그래프 투영에 필요한 모든 정보를 담는 경량 컨테이너.
@@ -650,6 +653,13 @@ class MainWindow(QMainWindow):
         graph_tabs.addTab(self._build_pie_tab("tree"), "교목 기여도")
         graph_tabs.addTab(self._build_estimation_tab("shrub"), "관목 추정")
         graph_tabs.addTab(self._build_pie_tab("shrub"), "관목 기여도")
+        # 지역별 3D 시각화는 독립 모듈에 위임한다. 기존 계산/그래프 경로에는 개입하지 않는다.
+        self.visualization_tab = VegetationVisualizationTab(
+            snapshot_provider=self._build_visualization_snapshot,
+            fingerprint_provider=self._visualization_fingerprint,
+            parent=self,
+        )
+        graph_tabs.addTab(self.visualization_tab, "시각화")
 
         # 결과 테이블
         tables_widget = QWidget()
@@ -943,6 +953,73 @@ class MainWindow(QMainWindow):
                 total += row.carbon_kg
 
         return entries, total, total_qty, warnings
+
+    # ----- 지역별 3D 시각화 adapter -----
+
+    def _visualization_inputs(self) -> Tuple[tuple[VisualizationInputGroup, ...], tuple[str, ...]]:
+        """현재 입력 위젯을 3D 전용 plain DTO로 복사한다.
+
+        `_Entry`나 마지막 계산 캐시에 의존하지 않으며, 기존 계산과 동일하게 범위 밖 행은
+        제외한다. 이 메서드 이후의 모든 처리는 tree_simulation 패키지가 담당한다.
+        """
+        result: list[VisualizationInputGroup] = []
+        warnings: list[str] = []
+        for kind, input_rows, species_map, unit in (
+            ("tree", self.tree_rows, self._tree_species, "cm"),
+            ("shrub", self.shrub_rows, self._shrub_species, "mm"),
+        ):
+            for input_row in input_rows:
+                species, diameter, quantity = input_row.values()
+                if quantity <= 0:
+                    continue
+                base = species_map.get(species)
+                if base is None:
+                    continue
+                if diameter < base.diameter_min or diameter > base.diameter_max:
+                    warnings.append(
+                        f"{species}: 유효 범위 {base.diameter_min:g}~"
+                        f"{base.diameter_max:g}{unit} 밖의 입력은 제외됨"
+                    )
+                    continue
+                override = input_row.override_coeffs()
+                if override is None:
+                    species_data = base
+                else:
+                    a, b, cf = override
+                    species_data = SpeciesData(
+                        a=a, b=b, cf=cf,
+                        diameter_min=base.diameter_min,
+                        diameter_max=base.diameter_max,
+                        growth_y10=base.growth_y10,
+                        growth_y20=base.growth_y20,
+                        growth_y21=base.growth_y21,
+                    )
+                result.append(VisualizationInputGroup(
+                    species=species,
+                    kind=kind,
+                    diameter=float(diameter),
+                    quantity=int(quantity),
+                    diameter_unit=unit,
+                    species_data=species_data,
+                ))
+        return tuple(result), tuple(warnings)
+
+    def _visualization_fingerprint(self) -> str:
+        inputs, _warnings = self._visualization_inputs()
+        return input_fingerprint(
+            self.region_name, self.environment, self.area_w, self.area_h, inputs,
+        )
+
+    def _build_visualization_snapshot(self):
+        inputs, warnings = self._visualization_inputs()
+        return build_snapshot(
+            region_name=self.region_name,
+            environment=self.environment,
+            area_w=self.area_w,
+            area_h=self.area_h,
+            inputs=inputs,
+            warnings=warnings,
+        )
 
     def _populate_table(self, table: QTableWidget, rows: List[CarbonRow]) -> None:
         table.setRowCount(len(rows))
