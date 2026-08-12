@@ -1,0 +1,6 @@
+PyQt5>=5.15
+matplotlib>=3.5
+numpy>=1.20
+openpyxl>=3.0      # Excel 저장 (앱 시작 시 import — 런타임 필수)
+Pillow>=9.0        # Excel 에 그래프 이미지 임베드 (없으면 그래프 시트만 생략)
+pyinstaller>=6.0

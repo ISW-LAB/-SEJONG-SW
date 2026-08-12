@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# PyInstaller build/output
+build/
+dist/
+*.spec
+installer_output/
+
+# Build venv (build_exe.py / build_updater.py create this outside Code/, but ignore just in case)
+.build_venv/
+
+# Editor/OS
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
