@@ -1,6 +1,10 @@
 PyQt5>=5.15
 matplotlib>=3.5
 numpy>=1.20
-openpyxl>=3.0      # Excel 저장 (앱 시작 시 import — 런타임 필수)
-Pillow>=9.0        # Excel 에 그래프 이미지 임베드 (없으면 그래프 시트만 생략)
+openpyxl>=3.0      # Required at application startup for Excel export
+Pillow>=9.0        # Embeds graph images in exported Excel workbooks
 pyinstaller>=6.0
+pyvista>=0.48
+pyvistaqt>=0.12
+vtk>=9.3
+QtPy>=2.4
