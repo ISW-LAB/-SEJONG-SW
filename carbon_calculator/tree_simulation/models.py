@@ -66,6 +66,7 @@ class RenderState:
     x_m: float
     y_m: float
     diameter_m: float
+    diameter_growth_ratio: float
     rendered_trunk_diameter_m: ModelValue
     rendered_height_m: ModelValue
     rendered_crown_width_m: ModelValue
@@ -94,3 +95,16 @@ class RegionVisualizationSnapshot:
     @property
     def shrub_count(self) -> int:
         return sum(g.quantity for g in self.groups if g.kind == "shrub")
+
+    def carbon_totals_at(self, year: int) -> tuple[float, float, float]:
+        year = max(0, min(50, int(year)))
+        tree = sum(float(g.carbon_by_year_kgc[year]) for g in self.groups if g.kind == "tree")
+        shrub = sum(float(g.carbon_by_year_kgc[year]) for g in self.groups if g.kind == "shrub")
+        return tree, shrub, tree + shrub
+
+    def carbon_timeline_maxima(self) -> tuple[float, float, float]:
+        tree = np.zeros(len(self.years), dtype=float)
+        shrub = np.zeros(len(self.years), dtype=float)
+        for group in self.groups:
+            (tree if group.kind == "tree" else shrub)[:] += group.carbon_by_year_kgc
+        return float(tree.max()), float(shrub.max()), float((tree + shrub).max())

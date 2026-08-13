@@ -660,6 +660,9 @@ class MainWindow(QMainWindow):
             parent=self,
         )
         graph_tabs.addTab(self.visualization_tab, "시각화")
+        self._graph_tabs = graph_tabs
+        self.visualization_tab.year_changed.connect(self._on_visualization_year_changed)
+        graph_tabs.currentChanged.connect(self._on_result_tab_changed)
 
         # 결과 테이블
         tables_widget = QWidget()
@@ -955,6 +958,53 @@ class MainWindow(QMainWindow):
         return entries, total, total_qty, warnings
 
     # ----- 지역별 3D 시각화 adapter -----
+
+    @staticmethod
+    def _gauge_ticks(maximum: float) -> list[float]:
+        maximum = max(1.0, float(maximum))
+        return [maximum * i / 5 for i in range(6)]
+
+    def _set_top_carbon_display(self, tree: float, shrub: float, total: float,
+                                *, visualization_scale: bool = False) -> None:
+        if visualization_scale:
+            snapshot = self.visualization_tab.snapshot
+            if snapshot is not None:
+                maxima = snapshot.carbon_timeline_maxima()
+                for gauge, maximum in zip(
+                    (self.tree_gauge, self.shrub_gauge, self.total_gauge), maxima,
+                ):
+                    scale_max = max(1.0, maximum * 1.03)
+                    gauge.setRange(0, scale_max, self._gauge_ticks(scale_max))
+        else:
+            self.tree_gauge.setRange(0, 2000, [0, 500, 1000, 1500, 2000])
+            self.shrub_gauge.setRange(0, 100, [0, 20, 40, 60, 80, 100])
+            self.total_gauge.setRange(0, 3000, [0, 500, 1000, 1500, 2000, 2500, 3000])
+        self.tree_gauge.setValue(tree)
+        self.shrub_gauge.setValue(shrub)
+        self.total_gauge.setValue(total)
+        self.tree_value_label.setText(f"{tree:,.2f}")
+        self.shrub_value_label.setText(f"{shrub:,.2f}")
+        self.total_value_label.setText(f"{total:,.2f}")
+
+    def _year_zero_carbon_totals(self) -> tuple[float, float, float]:
+        tree = sum(e.carbon_kg for e in self._tree_entries)
+        shrub = sum(e.carbon_kg for e in self._shrub_entries)
+        return tree, shrub, tree + shrub
+
+    def _on_visualization_year_changed(self, year: int) -> None:
+        if self._graph_tabs.currentWidget() is not self.visualization_tab:
+            return
+        snapshot = self.visualization_tab.snapshot
+        if snapshot is not None:
+            self._set_top_carbon_display(
+                *snapshot.carbon_totals_at(year), visualization_scale=True,
+            )
+
+    def _on_result_tab_changed(self, _index: int) -> None:
+        if self._graph_tabs.currentWidget() is self.visualization_tab:
+            self._on_visualization_year_changed(self.visualization_tab.year_slider.value())
+        else:
+            self._set_top_carbon_display(*self._year_zero_carbon_totals())
 
     def _visualization_inputs(self) -> Tuple[tuple[VisualizationInputGroup, ...], tuple[str, ...]]:
         """현재 입력 위젯을 3D 전용 plain DTO로 복사한다.
