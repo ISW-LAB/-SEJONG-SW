@@ -18,9 +18,7 @@ class VisualizationInputGroup:
     species_data: object
 
 
-ModelStatus = Literal[
-    "validated", "visual_fallback", "out_of_range_fallback", "unavailable",
-]
+ModelStatus = Literal["existing_project_data", "visual_fallback"]
 
 
 @dataclass(frozen=True)
@@ -68,6 +66,7 @@ class RenderState:
     x_m: float
     y_m: float
     diameter_m: float
+    rendered_trunk_diameter_m: ModelValue
     rendered_height_m: ModelValue
     rendered_crown_width_m: ModelValue
     rendered_crown_length_m: ModelValue

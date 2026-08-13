@@ -8,6 +8,8 @@ import random
 
 from .models import VegetationGroup, VegetationInstance
 
+JITTER_FRACTION = 0.25
+
 
 def stable_seed(region_name: str, environment: str, area_w: float, area_h: float,
                 groups: tuple[VegetationGroup, ...]) -> tuple[int, str]:
@@ -38,6 +40,8 @@ def place_instances(groups: tuple[VegetationGroup, ...], width: float, height: f
     cell_w, cell_h = width / cols, height / rows
     rng = random.Random(seed)
 
+    # 모든 교목·관목을 합친 단일 grid의 cell을 섞어 종류별 구역 분리를 막는다.
+    # 난수는 cell 내부의 제한된 offset과 cell 배정에만 사용한다.
     slots = list(range(rows * cols))
     rng.shuffle(slots)
     instances: list[VegetationInstance] = []
@@ -46,8 +50,8 @@ def place_instances(groups: tuple[VegetationGroup, ...], width: float, height: f
         for _ in range(group.quantity):
             slot = slots[instance_id]
             row, col = divmod(slot, cols)
-            jitter_x = rng.uniform(-0.28, 0.28) * cell_w
-            jitter_y = rng.uniform(-0.28, 0.28) * cell_h
+            jitter_x = rng.uniform(-JITTER_FRACTION, JITTER_FRACTION) * cell_w
+            jitter_y = rng.uniform(-JITTER_FRACTION, JITTER_FRACTION) * cell_h
             x = min(width - 0.02, max(0.02, (col + 0.5) * cell_w + jitter_x))
             y = min(height - 0.02, max(0.02, (row + 0.5) * cell_h + jitter_y))
             instances.append(VegetationInstance(

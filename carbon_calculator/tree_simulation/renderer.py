@@ -127,10 +127,7 @@ class VegetationRenderer:
             trunk_h = max(0.15, h - crown_l * (0.84 if state.kind == "shrub" else 0.72))
             # 실제 DBH는 계산에 그대로 보존하고, 단순 cylinder가 지나치게 가늘게
             # 보이는 문제만 렌더링 전용 비선형 보정으로 완화한다.
-            boost = 1.0 + profile.trunk_visual_boost * np.exp(
-                -state.diameter_m / profile.trunk_boost_decay_m
-            )
-            trunk_d = max(profile.trunk_min_visible_m, state.diameter_m * boost)
+            trunk_d = state.rendered_trunk_diameter_m.value
             if state.kind == "tree":
                 key = (state.profile_key, "trunk", 0)
                 buckets[key][0].append((state.x_m, state.y_m, trunk_h / 2))
