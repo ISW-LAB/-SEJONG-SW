@@ -7,8 +7,8 @@ import numpy as np
 import pyvista as pv
 from vtkmodules.util.numpy_support import numpy_to_vtk
 from vtkmodules.vtkCommonCore import vtkPoints
-from vtkmodules.vtkCommonDataModel import vtkPolyData
-from vtkmodules.vtkRenderingCore import vtkActor, vtkGlyph3DMapper
+from vtkmodules.vtkCommonDataModel import vtkCellArray, vtkPolyData
+from vtkmodules.vtkRenderingCore import vtkActor, vtkGlyph3DMapper, vtkPointPicker, vtkPolyDataMapper
 
 from .growth_models import render_states
 from .models import RegionVisualizationSnapshot, RenderState
@@ -24,12 +24,18 @@ class VegetationRenderer:
         self._ground_actor = None
         self._actors: list[vtkActor] = []
         self._datasets: dict[tuple[str, str, int], vtkPolyData] = {}
+        self._pick_actor: vtkActor | None = None
+        self._pick_dataset: vtkPolyData | None = None
+        self._pick_instance_ids: tuple[int, ...] = ()
 
     def clear(self) -> None:
         for actor in self._actors:
             self.plotter.renderer.RemoveActor(actor)
         self._actors.clear()
         self._datasets.clear()
+        self._pick_actor = None
+        self._pick_dataset = None
+        self._pick_instance_ids = ()
         if self._ground_actor is not None:
             self.plotter.remove_actor(self._ground_actor)
             self._ground_actor = None
@@ -51,7 +57,9 @@ class VegetationRenderer:
             ground, color="#B8C99D", show_edges=True, edge_color="#879A72",
             opacity=0.82, pickable=False,
         )
-        self._create_glyph_actors(render_states(snapshot, 0))
+        states = render_states(snapshot, 0)
+        self._create_glyph_actors(states)
+        self._create_pick_actor(states)
         self.plotter.show_grid(
             xtitle="X (m)", ytitle="Y (m)", ztitle="높이 (m)",
             bounds=(0, snapshot.area_w, 0, snapshot.area_h, 0, 1),
@@ -127,6 +135,18 @@ class VegetationRenderer:
                 key = (state.profile_key, "trunk", 0)
                 buckets[key][0].append((state.x_m, state.y_m, trunk_h / 2))
                 buckets[key][1].append((trunk_d, trunk_d, trunk_h))
+            else:
+                # 관목은 한 개의 구체가 아니라 수관 아래에서 갈라지는 짧은 다간 줄기로 표현한다.
+                stem_count = 5 if profile.shape == "shrub_multistem" else 3
+                stem_h = max(0.28, h * (0.58 if profile.shape == "shrub_upright" else 0.46))
+                for stem in range(stem_count):
+                    angle = state.instance_id * 1.19 + stem * (2 * np.pi / stem_count)
+                    radius = min(crown_w * 0.13, 0.18) * (stem / max(1, stem_count - 1))
+                    sx = state.x_m + np.cos(angle) * radius
+                    sy = state.y_m + np.sin(angle) * radius
+                    key = (state.profile_key, "trunk", stem)
+                    buckets[key][0].append((sx, sy, stem_h / 2))
+                    buckets[key][1].append((trunk_d * 0.72, trunk_d * 0.72, stem_h))
 
             layers = max(1, profile.crown_layers)
             for layer in range(layers):
@@ -160,10 +180,50 @@ class VegetationRenderer:
             opacity = 1.0 if key[1] == "trunk" else profile.opacity
             self._add_glyph_actor(key, points, scales, color, opacity)
 
+    def _create_pick_actor(self, states: tuple[RenderState, ...]) -> None:
+        points = np.asarray([
+            (s.x_m, s.y_m, s.rendered_height_m.value * 0.55) for s in states
+        ], dtype=float)
+        dataset = vtkPolyData()
+        vtk_points = vtkPoints()
+        vtk_points.SetData(numpy_to_vtk(points.astype(np.float32), deep=True))
+        dataset.SetPoints(vtk_points)
+        vertices = vtkCellArray()
+        for point_id in range(len(states)):
+            vertices.InsertNextCell(1)
+            vertices.InsertCellPoint(point_id)
+        dataset.SetVerts(vertices)
+        mapper = vtkPolyDataMapper(); mapper.SetInputData(dataset)
+        actor = vtkActor(); actor.SetMapper(mapper)
+        actor.GetProperty().SetRepresentationToPoints()
+        actor.GetProperty().SetPointSize(18)
+        actor.GetProperty().SetOpacity(0.01)
+        actor.SetPickable(True)
+        self.plotter.renderer.AddActor(actor)
+        self._actors.append(actor)
+        self._pick_actor = actor
+        self._pick_dataset = dataset
+        self._pick_instance_ids = tuple(s.instance_id for s in states)
+
+    def pick_instance(self, display_x: int, display_y: int) -> int | None:
+        if self._pick_actor is None:
+            return None
+        picker = vtkPointPicker()
+        picker.SetTolerance(0.035)
+        picker.PickFromListOn()
+        picker.AddPickList(self._pick_actor)
+        if not picker.Pick(display_x, display_y, 0, self.plotter.renderer):
+            return None
+        point_id = picker.GetPointId()
+        if 0 <= point_id < len(self._pick_instance_ids):
+            return self._pick_instance_ids[point_id]
+        return None
+
     def update_year(self, year: int) -> None:
         if self.snapshot is None:
             return
-        arrays = self._geometry_arrays(render_states(self.snapshot, year))
+        states = render_states(self.snapshot, year)
+        arrays = self._geometry_arrays(states)
         # snapshot 내 개체/프로파일 구성은 고정이므로 key와 point 수는 연도에 따라 동일하다.
         for key, dataset in self._datasets.items():
             points, scales = arrays[key]
@@ -174,4 +234,10 @@ class VegetationRenderer:
             dataset.GetPointData().AddArray(scale_arr)
             dataset.GetPointData().SetActiveVectors("scale")
             dataset.Modified()
+        if self._pick_dataset is not None:
+            pick_points = np.asarray([
+                (s.x_m, s.y_m, s.rendered_height_m.value * 0.55) for s in states
+            ], dtype=np.float32)
+            self._pick_dataset.GetPoints().SetData(numpy_to_vtk(pick_points, deep=True))
+            self._pick_dataset.Modified()
         self.plotter.render()

@@ -42,6 +42,12 @@ class VegetationGroup:
     diameter_by_year: np.ndarray
     carbon_by_year_kgc: np.ndarray
     profile_key: str
+    a: float
+    b: float
+    cf: float
+    growth_y10: float
+    growth_y20: float
+    growth_y21: float
 
 
 @dataclass(frozen=True)

@@ -60,6 +60,12 @@ def build_snapshot(*, region_name: str, environment: str, area_w: float, area_h:
             diameter_by_year=diameters,
             carbon_by_year_kgc=carbon,
             profile_key=profile_for(item.species, item.kind).key,
+            a=item.species_data.a,
+            b=item.species_data.b,
+            cf=item.species_data.cf,
+            growth_y10=item.species_data.growth_y10,
+            growth_y20=item.species_data.growth_y20,
+            growth_y21=item.species_data.growth_y21,
         ))
 
     group_tuple = tuple(groups)
