@@ -74,17 +74,19 @@ class VegetationDetailDialog(QDialog):
             ("상대생장식 계수", f"a={info.a:g} · b={info.b:g} · CF={info.cf:g}"),
             ("직경 성장률", f"1~10년 {info.growth_y10:g} · 11~20년 {info.growth_y20:g} · 21년+ {info.growth_y21:g} cm/yr"),
             ("지역 내 위치", f"X {info.x_m:,.2f} m · Y {info.y_m:,.2f} m"),
-            ("표현 수고", f"{info.rendered_height_m:,.2f} m"),
-            ("표현 수관 폭", f"{info.crown_width_m:,.2f} m"),
-            ("표현 수관 길이", f"{info.crown_length_m:,.2f} m"),
-            ("수고 모델 상태", info.height_status), ("수고 모델 출처", info.height_source),
+            ("표현 줄기 직경 (시각화용)", f"{info.rendered_trunk_diameter_m:,.3f} m"),
+            ("표현 수고 (시각화용)", f"{info.rendered_height_m:,.2f} m"),
+            ("표현 수관 폭 (시각화용)", f"{info.crown_width_m:,.2f} m"),
+            ("표현 수관 길이 (시각화용)", f"{info.crown_length_m:,.2f} m"),
+            ("표현 풍성함 (시각화용)", f"{info.visual_development * 100:,.0f}%"),
+            ("데이터 구분", "DBH/RCD·탄소: 기존 프로젝트 데이터 / 수고·수관·풍성함: visual fallback"),
         )
         for label, value in rows:
             field = QLabel(value); field.setWordWrap(True); field.setTextInteractionFlags(Qt.TextSelectableByMouse)
             form.addRow(label, field)
         body.addLayout(form, 1)
         root.addLayout(body)
-        note = QLabel("왼쪽 그림과 '표현' 수고·수관은 3D 시각화용입니다. 탄소 계산에는 영향을 주지 않습니다.")
+        note = QLabel("왼쪽 그림과 모든 '표현' 값은 3D 시각화용이며 탄소 계산에는 영향을 주지 않습니다.")
         note.setWordWrap(True); note.setStyleSheet("color:#6B7780; padding:4px;")
         root.addWidget(note)
         close_btn = QPushButton("닫기"); close_btn.clicked.connect(self.close)

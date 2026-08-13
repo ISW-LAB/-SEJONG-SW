@@ -20,10 +20,10 @@ class InstanceInspection:
     x_m: float
     y_m: float
     rendered_height_m: float
-    height_status: str
-    height_source: str
+    rendered_trunk_diameter_m: float
     crown_width_m: float
     crown_length_m: float
+    visual_development: float
     profile_key: str
     profile_shape: str
     profile_color: str
@@ -57,10 +57,10 @@ def inspect_instance(snapshot: RegionVisualizationSnapshot, instance_id: int,
         x_m=instance.x_m,
         y_m=instance.y_m,
         rendered_height_m=state.rendered_height_m.value,
-        height_status=state.rendered_height_m.status,
-        height_source=state.rendered_height_m.source,
+        rendered_trunk_diameter_m=state.rendered_trunk_diameter_m.value,
         crown_width_m=state.rendered_crown_width_m.value,
         crown_length_m=state.rendered_crown_length_m.value,
+        visual_development=state.visual_development,
         profile_key=group.profile_key,
         profile_shape=profile.shape,
         profile_color=profile.color,
