@@ -49,6 +49,9 @@ class VegetationVisualizationTab(QWidget):
         self.plotter = QtInteractor(self, auto_update=False)
         self.plotter.setMinimumHeight(px(300))
         self.plotter.set_background("#EEF3F0")
+        # 지면의 Z축을 항상 위쪽으로 유지한다. 기본 trackball 방식에서 가능한
+        # 카메라 roll을 제거해 화면이 좌우로 기울어지는 것을 방지한다.
+        self.plotter.enable_terrain_style(mouse_wheel_zooms=True, shift_pans=True)
         self.renderer = VegetationRenderer(self.plotter)
         root.addWidget(self.plotter, 1)
 

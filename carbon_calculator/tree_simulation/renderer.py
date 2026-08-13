@@ -57,6 +57,7 @@ class VegetationRenderer:
             bounds=(0, snapshot.area_w, 0, snapshot.area_h, 0, 1),
         )
         self.plotter.view_isometric()
+        self.plotter.camera.up = (0.0, 0.0, 1.0)
         self.plotter.reset_camera()
         self.plotter.render()
 
