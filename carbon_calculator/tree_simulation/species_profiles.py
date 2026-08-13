@@ -21,6 +21,9 @@ class SpeciesRenderProfile:
     crown_layers: int
     crown_irregularity: float
     opacity: float = 0.92
+    trunk_visual_boost: float = 1.4
+    trunk_boost_decay_m: float = 0.18
+    trunk_min_visible_m: float = 0.12
 
 
 TREE_PROFILES: dict[str, SpeciesRenderProfile] = {
@@ -54,10 +57,33 @@ TREE_PROFILES: dict[str, SpeciesRenderProfile] = {
     ),
 }
 
-SHRUB_PROFILE = SpeciesRenderProfile(
-    "shrub", "", "shrub", "#78A95A",
-    0.42, 4.5, 1.55, 0.72, 0.15, 3, 0.18, 0.90,
-)
+SHRUB_PROFILES: dict[str, SpeciesRenderProfile] = {
+    # 관목 형태군은 과학적 수형 복원이 아니라 화면 식별을 위한 render profile이다.
+    "shrub_rounded": SpeciesRenderProfile(
+        "shrub_rounded", "", "shrub_rounded", "#78A95A",
+        0.88, 3.2, 1.55, 0.76, 0.12, 3, 0.16, 0.92,
+    ),
+    "shrub_upright": SpeciesRenderProfile(
+        "shrub_upright", "", "shrub_upright", "#5D994F",
+        1.12, 4.2, 1.05, 0.88, 0.10, 4, 0.10, 0.91,
+    ),
+    "shrub_spreading": SpeciesRenderProfile(
+        "shrub_spreading", "", "shrub_spreading", "#8CAD57",
+        0.66, 2.4, 2.05, 0.62, 0.08, 4, 0.24, 0.90,
+    ),
+    "shrub_multistem": SpeciesRenderProfile(
+        "shrub_multistem", "", "shrub_multistem", "#6FA24D",
+        0.96, 3.6, 1.68, 0.82, 0.10, 5, 0.30, 0.88,
+    ),
+}
+
+SHRUB_PROFILE_BY_SPECIES = {
+    "사철나무": "shrub_rounded", "회양목": "shrub_rounded", "남천": "shrub_upright",
+    "산철쭉": "shrub_rounded", "조팝나무": "shrub_multistem", "화살나무": "shrub_upright",
+    "개나리": "shrub_spreading", "덜꿩나무": "shrub_multistem", "말발도리": "shrub_multistem",
+    "병꽃나무": "shrub_multistem", "싸리": "shrub_upright", "수수꽃다리": "shrub_upright",
+    "좀작살나무": "shrub_multistem", "쥐똥나무": "shrub_rounded", "흰말채나무": "shrub_spreading",
+}
 
 DEFAULT_TREE_PROFILE = SpeciesRenderProfile(
     "default_tree", "", "rounded", "#5F934A",
@@ -67,12 +93,13 @@ DEFAULT_TREE_PROFILE = SpeciesRenderProfile(
 
 def profile_for(species: str, kind: str) -> SpeciesRenderProfile:
     if kind == "shrub":
-        return SHRUB_PROFILE
+        key = SHRUB_PROFILE_BY_SPECIES.get(species, "shrub_rounded")
+        return SHRUB_PROFILES[key]
     return TREE_PROFILES.get(species, DEFAULT_TREE_PROFILE)
 
 
 def profile_by_key(key: str) -> SpeciesRenderProfile:
-    for profile in (*TREE_PROFILES.values(), SHRUB_PROFILE, DEFAULT_TREE_PROFILE):
+    for profile in (*TREE_PROFILES.values(), *SHRUB_PROFILES.values(), DEFAULT_TREE_PROFILE):
         if profile.key == key:
             return profile
     return DEFAULT_TREE_PROFILE

@@ -89,6 +89,7 @@ class VegetationVisualizationTab(QWidget):
         note = QLabel(
             "DBH/RCD 성장은 현재 수종별 생장자료를 사용합니다. 수고 및 수관 변화는 "
             "검증식이 있는 경우 해당 식을 사용하며, 그 외에는 3D 표현용 기본 모델을 사용합니다. "
+            "단순 3D 형상에서 식별하기 쉽도록 줄기 굵기는 화면 표시용으로 보정됩니다. "
             "Year 0은 현재 입력 상태입니다."
         )
         note.setWordWrap(True)
