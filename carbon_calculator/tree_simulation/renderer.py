@@ -75,7 +75,7 @@ class VegetationRenderer:
                 center=(0, 0, 0), direction=(0, 0, 1), height=1.0,
                 radius=0.5, resolution=resolution, capping=True,
             )
-        if profile.shape == "shrub":
+        if profile.shape.startswith("shrub_"):
             return pv.Sphere(radius=0.5, theta_resolution=10, phi_resolution=7)
         return pv.Sphere(radius=0.5, theta_resolution=12, phi_resolution=8)
 
@@ -117,7 +117,12 @@ class VegetationRenderer:
             crown_l = min(h, state.rendered_crown_length_m.value)
             crown_w = state.rendered_crown_width_m.value
             trunk_h = max(0.15, h - crown_l * (0.84 if state.kind == "shrub" else 0.72))
-            trunk_d = max(0.025, state.diameter_m)
+            # 실제 DBH는 계산에 그대로 보존하고, 단순 cylinder가 지나치게 가늘게
+            # 보이는 문제만 렌더링 전용 비선형 보정으로 완화한다.
+            boost = 1.0 + profile.trunk_visual_boost * np.exp(
+                -state.diameter_m / profile.trunk_boost_decay_m
+            )
+            trunk_d = max(profile.trunk_min_visible_m, state.diameter_m * boost)
             if state.kind == "tree":
                 key = (state.profile_key, "trunk", 0)
                 buckets[key][0].append((state.x_m, state.y_m, trunk_h / 2))
@@ -128,7 +133,10 @@ class VegetationRenderer:
                 frac = (layer + 0.5) / layers
                 z = max(0.08, h - crown_l + crown_l * frac)
                 taper = 1.0 - 0.24 * layer / max(1, layers - 1)
-                if profile.shape in ("open_oval", "rounded", "dense_oval", "spreading"):
+                if profile.shape in (
+                    "open_oval", "rounded", "dense_oval", "spreading",
+                    "shrub_rounded", "shrub_spreading", "shrub_multistem",
+                ):
                     offset = profile.crown_irregularity * crown_w
                     x = state.x_m + offset * np.sin(state.instance_id * 1.73 + layer)
                     y = state.y_m + offset * np.cos(state.instance_id * 1.31 + layer)
@@ -137,7 +145,8 @@ class VegetationRenderer:
                 key = (state.profile_key, "crown", layer)
                 buckets[key][0].append((x, y, z))
                 width = crown_w * taper
-                layer_h = crown_l / (layers * (0.72 if profile.shape == "shrub" else 0.58))
+                shrub_shape = profile.shape.startswith("shrub_")
+                layer_h = crown_l / (layers * (0.72 if shrub_shape else 0.58))
                 buckets[key][1].append((width, width, max(0.18, layer_h)))
         return {
             key: (np.asarray(points, dtype=float), np.asarray(scales, dtype=float))

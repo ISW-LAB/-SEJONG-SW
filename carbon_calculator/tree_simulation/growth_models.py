@@ -35,8 +35,8 @@ def visual_development(elapsed_year: int) -> float:
 
 def _fallback_height(diameter_m: float, profile: SpeciesRenderProfile, kind: str) -> float:
     # 포화형 함수: 작은 직경에서도 보이며 큰 직경에서 profile limit에 점근한다.
-    base = 0.35 if kind == "shrub" else 1.3
-    rate = 3.2 if kind == "shrub" else 5.4
+    base = 0.58 if kind == "shrub" else 1.3
+    rate = 20.0 if kind == "shrub" else 5.4
     scaled = 1.0 - math.exp(-rate * max(0.0, diameter_m) * profile.height_scale)
     return base + (profile.height_limit_m - base) * scaled
 
@@ -62,8 +62,8 @@ def rendered_height(species: str, diameter_value: float, diameter_unit: str,
 def rendered_crown(profile: SpeciesRenderProfile, diameter_m: float,
                    height_m: float, elapsed_year: int, kind: str) -> tuple[ModelValue, ModelValue]:
     development = visual_development(elapsed_year)
-    min_width = 0.35 if kind == "shrub" else 0.55
-    width_limit = height_m * (1.25 if kind == "shrub" else 0.78)
+    min_width = 0.65 if kind == "shrub" else 0.55
+    width_limit = height_m * (1.65 if kind == "shrub" else 0.78)
     raw_width = min_width + profile.crown_width_scale * math.sqrt(max(diameter_m, 0.001)) * 4.0
     width = min(width_limit, raw_width) * (0.72 + 0.28 * development)
     length = max(0.25, height_m * profile.crown_length_ratio * (0.82 + 0.18 * development))
