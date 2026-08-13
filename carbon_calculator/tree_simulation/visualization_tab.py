@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Callable
 
-from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtCore import Qt, QTimer, pyqtSignal
 from PyQt5.QtGui import QCursor
 from PyQt5.QtWidgets import (
     QFrame, QHBoxLayout, QLabel, QPushButton, QSlider, QToolTip, QVBoxLayout,
@@ -23,6 +23,11 @@ FingerprintProvider = Callable[[], str]
 
 
 class VegetationVisualizationTab(QWidget):
+    year_changed = pyqtSignal(int)
+
+    @property
+    def snapshot(self) -> RegionVisualizationSnapshot | None:
+        return self._snapshot
     def __init__(self, snapshot_provider: SnapshotProvider,
                  fingerprint_provider: FingerprintProvider, parent=None):
         super().__init__(parent)
@@ -153,6 +158,7 @@ class VegetationVisualizationTab(QWidget):
             f"총 탄소저장량: {carbon:,.2f} kgC · "
             f"교목 {self._snapshot.tree_count:,}주 / 관목 {self._snapshot.shrub_count:,}주"
         )
+        self.year_changed.emit(year)
 
     def _event_position(self) -> tuple[int, int]:
         x, y = self.plotter.interactor.GetEventPosition()

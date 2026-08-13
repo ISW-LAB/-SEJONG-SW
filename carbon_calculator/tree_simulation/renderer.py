@@ -161,9 +161,12 @@ class VegetationRenderer:
                     x, y = state.x_m, state.y_m
                 key = (state.profile_key, "crown", layer)
                 buckets[key][0].append((x, y, z))
-                width = crown_w * taper
+                # 크기는 DBH/RCD 성장비가 담당하고, 경과 연도는 수관 element의
+                # 부피감만 완만하게 보강한다(LAI/밀도 값이 아님).
+                fullness = 0.84 + 0.16 * state.visual_development
+                width = crown_w * taper * fullness
                 shrub_shape = profile.shape.startswith("shrub_")
-                layer_h = crown_l / (layers * (0.72 if shrub_shape else 0.58))
+                layer_h = crown_l * fullness / (layers * (0.72 if shrub_shape else 0.58))
                 buckets[key][1].append((width, width, max(0.18, layer_h)))
         return {
             key: (np.asarray(points, dtype=float), np.asarray(scales, dtype=float))

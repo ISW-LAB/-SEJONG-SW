@@ -263,6 +263,14 @@ class LinearGauge(QWidget):
         self._value = max(self._min, min(self._max, float(v)))
         self.update()
 
+    def setRange(self, minimum: float, maximum: float,
+                 major_ticks: list[float] | None = None) -> None:
+        self._min = float(minimum)
+        self._max = max(self._min + 1e-9, float(maximum))
+        self._major_ticks = list(major_ticks) if major_ticks else self._default_ticks()
+        self._value = max(self._min, min(self._max, self._value))
+        self.update()
+
     def value(self) -> float:
         return self._value
 

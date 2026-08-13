@@ -8,6 +8,23 @@ from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
+class VisualGrowthSensitivity:
+    """실측 생장계수가 아닌 직경 성장비→화면 크기 공통 민감도."""
+    height_exponent: float
+    crown_width_exponent: float
+    crown_length_exponent: float
+    safety_scale: float
+
+
+TREE_GROWTH_SENSITIVITY = VisualGrowthSensitivity(0.46, 0.58, 0.52, 2.8)
+SHRUB_GROWTH_SENSITIVITY = VisualGrowthSensitivity(0.38, 0.68, 0.58, 3.2)
+
+
+def growth_sensitivity(kind: str) -> VisualGrowthSensitivity:
+    return SHRUB_GROWTH_SENSITIVITY if kind == "shrub" else TREE_GROWTH_SENSITIVITY
+
+
+@dataclass(frozen=True)
 class SpeciesRenderProfile:
     key: str
     scientific_name: str

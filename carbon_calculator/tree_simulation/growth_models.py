@@ -9,7 +9,7 @@ import math
 import numpy as np
 
 from .models import ModelValue, RenderState, RegionVisualizationSnapshot
-from .species_profiles import SpeciesRenderProfile, profile_by_key
+from .species_profiles import SpeciesRenderProfile, growth_sensitivity, profile_by_key
 
 
 VISUAL_FALLBACK_SOURCE = "Carbon1 3D visual fallback (not a scientific height/crown model)"
@@ -31,29 +31,36 @@ def visual_development(elapsed_year: int) -> float:
     return max(0.0, min(1.0, elapsed_year / 50.0))
 
 
-def _fallback_height(diameter_m: float, profile: SpeciesRenderProfile, kind: str,
-                     elapsed_year: int) -> float:
-    # 포화형 함수: 작은 직경에서도 보이며 큰 직경에서 profile limit에 점근한다.
+def _base_visual_height(initial_diameter_m: float, profile: SpeciesRenderProfile,
+                        kind: str) -> float:
+    """Year 0의 자연스러운 외형만 정하는 시각화용 기준 높이."""
     base = 0.58 if kind == "shrub" else 1.3
-    # 관목은 mm→m 변환 뒤에도 RCD 변화가 화면에서 드러나되 조기 포화되지 않게 한다.
     rate = 8.0 if kind == "shrub" else 3.8
-    scaled = 1.0 - math.exp(-rate * max(0.0, diameter_m) * profile.height_scale)
-    development = visual_development(elapsed_year)
-    # 직경과 경과 시간을 별도 시각 성분으로 합쳐 조기 포화를 피한다. 최대값보다
-    # 여유를 남겨 전 구간에서 성장 변화가 보이도록 한 렌더링 전용 mapping이다.
-    if kind == "shrub":
-        progress = 0.68 * scaled + 0.22 * development * profile.visual_growth_scale
-    else:
-        progress = 0.78 * scaled + 0.14 * development * profile.visual_growth_scale
-    return base + (profile.height_limit_m - base) * min(0.96, progress)
+    scaled = 1.0 - math.exp(-rate * max(0.0, initial_diameter_m) * profile.height_scale)
+    return base + (profile.height_limit_m - base) * (0.68 if kind == "shrub" else 0.78) * scaled
+
+
+def diameter_growth_ratio(current_diameter: float, initial_diameter: float) -> float:
+    """현재 상태(Year 0) 직경 대비 실제 DBH/RCD 성장비."""
+    if initial_diameter <= 0:
+        return 1.0
+    return max(1.0, current_diameter / initial_diameter)
 
 
 def rendered_height(species: str, diameter_value: float, diameter_unit: str,
                     profile: SpeciesRenderProfile, kind: str,
-                    elapsed_year: int = 0) -> ModelValue:
-    diameter_m = diameter_value / (100.0 if diameter_unit == "cm" else 1000.0)
+                    elapsed_year: int = 0, initial_diameter: float | None = None) -> ModelValue:
+    initial = diameter_value if initial_diameter is None else initial_diameter
+    unit_scale = 100.0 if diameter_unit == "cm" else 1000.0
+    base_height = _base_visual_height(initial / unit_scale, profile, kind)
+    ratio = diameter_growth_ratio(diameter_value, initial)
+    sensitivity = growth_sensitivity(kind)
+    visual_height = min(
+        profile.height_limit_m * sensitivity.safety_scale,
+        base_height * ratio ** sensitivity.height_exponent,
+    )
     return ModelValue(
-        _fallback_height(diameter_m, profile, kind, elapsed_year), "m", "visual_fallback",
+        visual_height, "m", "visual_fallback",
         VISUAL_FALLBACK_SOURCE,
     )
 
@@ -67,17 +74,24 @@ def rendered_trunk_diameter(diameter_m: float, profile: SpeciesRenderProfile) ->
     return ModelValue(value, "m", "visual_fallback", "3D visibility adjustment")
 
 
-def rendered_crown(profile: SpeciesRenderProfile, diameter_m: float,
-                   height_m: float, elapsed_year: int, kind: str) -> tuple[ModelValue, ModelValue]:
-    development = visual_development(elapsed_year)
+def rendered_crown(profile: SpeciesRenderProfile, initial_diameter_m: float,
+                   growth_ratio: float, base_height_m: float, kind: str) -> tuple[ModelValue, ModelValue]:
     min_width = 0.65 if kind == "shrub" else 0.55
-    width_limit = height_m * (1.65 if kind == "shrub" else 0.78)
-    raw_width = min_width + profile.crown_width_scale * math.sqrt(max(diameter_m, 0.001)) * 4.0
-    growth = profile.visual_growth_scale * development
-    width_factor = (0.62 + 0.38 * growth) if kind == "shrub" else (0.76 + 0.24 * growth)
-    length_factor = (0.68 + 0.32 * growth) if kind == "shrub" else (0.80 + 0.20 * growth)
-    width = min(width_limit, raw_width) * width_factor
-    length = max(0.25, height_m * profile.crown_length_ratio * length_factor)
+    sensitivity = growth_sensitivity(kind)
+    base_width_limit = base_height_m * (1.65 if kind == "shrub" else 0.78)
+    base_width = min(
+        base_width_limit,
+        min_width + profile.crown_width_scale * math.sqrt(max(initial_diameter_m, 0.001)) * 4.0,
+    )
+    base_length = max(0.25, base_height_m * profile.crown_length_ratio)
+    width = min(
+        base_width * sensitivity.safety_scale,
+        base_width * growth_ratio ** sensitivity.crown_width_exponent,
+    )
+    length = min(
+        base_length * sensitivity.safety_scale,
+        base_length * growth_ratio ** sensitivity.crown_length_exponent,
+    )
     source = "Carbon1 3D visual crown fallback (not a scientific crown model)"
     return (
         ModelValue(width, "m", "visual_fallback", source),
@@ -94,11 +108,16 @@ def render_states(snapshot: RegionVisualizationSnapshot, year: int) -> tuple[Ren
         profile = profile_by_key(group.profile_key)
         diameter = float(group.diameter_by_year[year])
         diameter_m = diameter / (100.0 if group.diameter_unit == "cm" else 1000.0)
+        unit_scale = 100.0 if group.diameter_unit == "cm" else 1000.0
+        initial_diameter_m = group.initial_diameter / unit_scale
+        growth_ratio = diameter_growth_ratio(diameter, group.initial_diameter)
         height = rendered_height(
             group.species, diameter, group.diameter_unit, profile, group.kind, year,
+            group.initial_diameter,
         )
+        base_height = _base_visual_height(initial_diameter_m, profile, group.kind)
         crown_width, crown_length = rendered_crown(
-            profile, diameter_m, height.value, year, group.kind,
+            profile, initial_diameter_m, growth_ratio, base_height, group.kind,
         )
         states.append(RenderState(
             instance_id=instance.instance_id,
@@ -107,6 +126,7 @@ def render_states(snapshot: RegionVisualizationSnapshot, year: int) -> tuple[Ren
             x_m=instance.x_m,
             y_m=instance.y_m,
             diameter_m=diameter_m,
+            diameter_growth_ratio=growth_ratio,
             rendered_trunk_diameter_m=rendered_trunk_diameter(diameter_m, profile),
             rendered_height_m=height,
             rendered_crown_width_m=crown_width,
