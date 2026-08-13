@@ -61,19 +61,19 @@ SHRUB_PROFILES: dict[str, SpeciesRenderProfile] = {
     # 관목 형태군은 과학적 수형 복원이 아니라 화면 식별을 위한 render profile이다.
     "shrub_rounded": SpeciesRenderProfile(
         "shrub_rounded", "", "shrub_rounded", "#78A95A",
-        0.88, 3.2, 1.55, 0.76, 0.12, 3, 0.16, 0.92,
+        0.88, 3.2, 1.55, 0.76, 0.12, 3, 0.16, 0.92, 2.2, 0.05, 0.035,
     ),
     "shrub_upright": SpeciesRenderProfile(
         "shrub_upright", "", "shrub_upright", "#5D994F",
-        1.12, 4.2, 1.05, 0.88, 0.10, 4, 0.10, 0.91,
+        1.12, 4.2, 1.05, 0.88, 0.10, 4, 0.10, 0.91, 2.2, 0.05, 0.035,
     ),
     "shrub_spreading": SpeciesRenderProfile(
         "shrub_spreading", "", "shrub_spreading", "#8CAD57",
-        0.66, 2.4, 2.05, 0.62, 0.08, 4, 0.24, 0.90,
+        0.66, 2.4, 2.05, 0.62, 0.08, 4, 0.24, 0.90, 2.2, 0.05, 0.035,
     ),
     "shrub_multistem": SpeciesRenderProfile(
         "shrub_multistem", "", "shrub_multistem", "#6FA24D",
-        0.96, 3.6, 1.68, 0.82, 0.10, 5, 0.30, 0.88,
+        0.96, 3.6, 1.68, 0.82, 0.10, 5, 0.30, 0.88, 2.2, 0.05, 0.035,
     ),
 }
 

@@ -4,14 +4,17 @@ from __future__ import annotations
 from typing import Callable
 
 from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtGui import QCursor
 from PyQt5.QtWidgets import (
-    QFrame, QHBoxLayout, QLabel, QPushButton, QSlider, QVBoxLayout,
+    QFrame, QHBoxLayout, QLabel, QPushButton, QSlider, QToolTip, QVBoxLayout,
     QWidget,
 )
 from pyvistaqt import QtInteractor
 
 from ..ui_scale import pt, px
 from .models import RegionVisualizationSnapshot
+from .detail_dialog import VegetationDetailDialog
+from .inspection import inspect_instance
 from .renderer import VegetationRenderer
 
 
@@ -26,6 +29,8 @@ class VegetationVisualizationTab(QWidget):
         self._snapshot_provider = snapshot_provider
         self._fingerprint_provider = fingerprint_provider
         self._snapshot: RegionVisualizationSnapshot | None = None
+        self._mouse_press_position: tuple[int, int] | None = None
+        self._detail_dialogs: list[VegetationDetailDialog] = []
         self._build_ui()
         self._play_timer = QTimer(self)
         self._play_timer.setInterval(450)
@@ -53,6 +58,9 @@ class VegetationVisualizationTab(QWidget):
         # 카메라 roll을 제거해 화면이 좌우로 기울어지는 것을 방지한다.
         self.plotter.enable_terrain_style(mouse_wheel_zooms=True, shift_pans=True)
         self.renderer = VegetationRenderer(self.plotter)
+        self.plotter.iren.add_observer("MouseMoveEvent", self._on_3d_mouse_move)
+        self.plotter.iren.add_observer("LeftButtonPressEvent", self._on_3d_mouse_press)
+        self.plotter.iren.add_observer("LeftButtonReleaseEvent", self._on_3d_mouse_release)
         root.addWidget(self.plotter, 1)
 
         controls = QFrame()
@@ -144,6 +152,48 @@ class VegetationVisualizationTab(QWidget):
             f"총 탄소저장량: {carbon:,.2f} kgC · "
             f"교목 {self._snapshot.tree_count:,}주 / 관목 {self._snapshot.shrub_count:,}주"
         )
+
+    def _event_position(self) -> tuple[int, int]:
+        x, y = self.plotter.interactor.GetEventPosition()
+        return int(x), int(y)
+
+    def _inspection_at(self, x: int, y: int):
+        if self._snapshot is None:
+            return None
+        instance_id = self.renderer.pick_instance(x, y)
+        if instance_id is None:
+            return None
+        return inspect_instance(self._snapshot, instance_id, self.year_slider.value())
+
+    def _on_3d_mouse_move(self, *_args) -> None:
+        info = self._inspection_at(*self._event_position())
+        if info is None:
+            QToolTip.hideText()
+            return
+        diameter_name = "DBH" if info.kind == "tree" else "RCD"
+        QToolTip.showText(
+            QCursor.pos(),
+            f"{info.species}\n{diameter_name}: {info.diameter:,.2f} {info.diameter_unit}\n"
+            f"탄소저장량: {info.carbon_kgc:,.4f} kgC/주\n클릭하면 상세 정보를 표시합니다.",
+            self.plotter,
+        )
+
+    def _on_3d_mouse_press(self, *_args) -> None:
+        self._mouse_press_position = self._event_position()
+
+    def _on_3d_mouse_release(self, *_args) -> None:
+        end = self._event_position()
+        start = self._mouse_press_position
+        self._mouse_press_position = None
+        if start is None or abs(end[0] - start[0]) + abs(end[1] - start[1]) > 5:
+            return  # 카메라를 회전한 drag는 개체 클릭으로 취급하지 않는다.
+        info = self._inspection_at(*end)
+        if info is None:
+            return
+        dialog = VegetationDetailDialog(info, self)
+        self._detail_dialogs.append(dialog)
+        dialog.finished.connect(lambda _result, d=dialog: self._detail_dialogs.remove(d))
+        dialog.show()
 
     def play(self) -> None:
         if self._snapshot is None:
