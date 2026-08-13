@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+import math
 
 import numpy as np
 import pyvista as pv
@@ -27,6 +28,7 @@ class VegetationRenderer:
         self._pick_actor: vtkActor | None = None
         self._pick_dataset: vtkPolyData | None = None
         self._pick_instance_ids: tuple[int, ...] = ()
+        self._z_axis_max = 1.0
 
     def clear(self) -> None:
         for actor in self._actors:
@@ -36,6 +38,8 @@ class VegetationRenderer:
         self._pick_actor = None
         self._pick_dataset = None
         self._pick_instance_ids = ()
+        self.plotter.remove_bounds_axes()
+        self._z_axis_max = 1.0
         if self._ground_actor is not None:
             self.plotter.remove_actor(self._ground_actor)
             self._ground_actor = None
@@ -60,14 +64,49 @@ class VegetationRenderer:
         states = render_states(snapshot, 0)
         self._create_glyph_actors(states)
         self._create_pick_actor(states)
-        self.plotter.show_grid(
-            xtitle="X (m)", ytitle="Y (m)", ztitle="높이 (m)",
-            bounds=(0, snapshot.area_w, 0, snapshot.area_h, 0, 1),
-        )
+        self._update_height_axis(states)
         self.plotter.view_isometric()
         self.plotter.camera.up = (0.0, 0.0, 1.0)
         self.plotter.reset_camera()
         self.plotter.render()
+
+    @staticmethod
+    def _nice_height_axis(max_height: float) -> tuple[float, float, int, str]:
+        """최대 수고에 여백을 더하고 1·2·5 계열의 읽기 좋은 Z축을 만든다."""
+        padded = max(1.0, float(max_height) * 1.15)
+        # 화면에서 짧게 투영되는 Z축에 4개 안팎의 구간을 우선해 겹침을 막는다.
+        rough_step = padded / 4.0
+        magnitude = 10.0 ** math.floor(math.log10(rough_step))
+        normalized = rough_step / magnitude
+        if normalized <= 1.0:
+            step = magnitude
+        elif normalized <= 2.0:
+            step = 2.0 * magnitude
+        elif normalized <= 5.0:
+            step = 5.0 * magnitude
+        else:
+            step = 10.0 * magnitude
+        z_max = math.ceil(padded / step) * step
+        label_count = max(2, min(5, int(round(z_max / step)) + 1))
+        label_format = "%.0f" if step >= 1.0 else "%.1f"
+        return z_max, step, label_count, label_format
+
+    def _update_height_axis(self, states: tuple[RenderState, ...]) -> None:
+        if self.snapshot is None:
+            return
+        max_height = max((s.rendered_height_m.value for s in states), default=0.0)
+        z_max, _step, label_count, label_format = self._nice_height_axis(max_height)
+        self.plotter.remove_bounds_axes()
+        axis = self.plotter.show_grid(
+            xtitle="X (m)", ytitle="Y (m)", ztitle="수고 (m)",
+            bounds=(0, self.snapshot.area_w, 0, self.snapshot.area_h, 0, z_max),
+            n_zlabels=label_count,
+        )
+        # X/Y 형식은 기존 show_grid 기본값을 유지하고 Z축만 간결하게 표시한다.
+        axis.SetZLabelFormat(label_format)
+        axis.GetZAxesLabelProperty().SetFontSize(10)
+        axis.GetZAxesTitleProperty().SetFontSize(11)
+        self._z_axis_max = z_max
 
     @staticmethod
     def _source_for(profile_key: str, component: str, layer: int):
@@ -240,4 +279,6 @@ class VegetationRenderer:
             ], dtype=np.float32)
             self._pick_dataset.GetPoints().SetData(numpy_to_vtk(pick_points, deep=True))
             self._pick_dataset.Modified()
+        # 축 actor만 교체하며 camera position/focal point/up은 변경하지 않는다.
+        self._update_height_axis(states)
         self.plotter.render()
