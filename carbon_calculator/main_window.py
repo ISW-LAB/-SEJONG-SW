@@ -14,6 +14,8 @@ from __future__ import annotations
 
 import datetime
 import io
+import math
+import random
 import re
 from dataclasses import dataclass
 from typing import List, Optional, Tuple
@@ -62,6 +64,10 @@ class _Entry:
 # 사용자 편집 가능한 (a, b, CF) 오버라이드 타입.
 OverrideCoeffs = Tuple[float, float, float]
 
+TEST_TREE_QUANTITY_RANGE = (3, 10)
+TEST_SHRUB_QUANTITY_RANGE = (3, 12)
+TEST_DIAMETER_MARGIN_RATIO = 0.10
+
 
 def _coeffs_equal(a1: OverrideCoeffs, a2: OverrideCoeffs, tol: float = 1e-9) -> bool:
     return all(abs(x - y) <= tol for x, y in zip(a1, a2))
@@ -90,6 +96,8 @@ class AddSpeciesDialog(QDialog):
 
         # 환경별로 해석된 수종 맵/목록을 호출측(MainWindow)에서 주입받는다.
         self._species_map = species_map
+        self._names = list(names)
+        self._last_random_test_values: tuple[str, int, int] | None = None
         self._diameter_unit = "cm" if is_tree else "mm"
         diameter_label = f"변수 ({'DBH' if is_tree else 'RCD'} · {self._diameter_unit})"
         diameter_max = 50 if is_tree else 100
@@ -100,6 +108,9 @@ class AddSpeciesDialog(QDialog):
         body.addWidget(self._build_right_panel(), 1)
 
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        self.random_test_button = QPushButton("테스트 랜덤")
+        self.random_test_button.setToolTip("유효 범위 안의 테스트 입력값을 자동으로 채웁니다.")
+        buttons.addButton(self.random_test_button, QDialogButtonBox.ActionRole)
         buttons.button(QDialogButtonBox.Ok).setText("추가 (Ctrl+Enter)")
         buttons.button(QDialogButtonBox.Cancel).setText("취소")
         # 일반 Enter 로는 추가되지 않도록 기본 버튼 해제 (keyPressEvent 에서 Ctrl+Enter 만 허용)
@@ -109,6 +120,7 @@ class AddSpeciesDialog(QDialog):
         buttons.button(QDialogButtonBox.Cancel).setDefault(False)
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
+        self.random_test_button.clicked.connect(self._fill_random_test_values)
 
         layout = QVBoxLayout(self)
         layout.addLayout(body, 1)
@@ -224,6 +236,58 @@ class AddSpeciesDialog(QDialog):
         return wrap
 
     # ----- 이벤트 -----
+
+    @staticmethod
+    def _test_diameter_range(sp: SpeciesData) -> tuple[int, int]:
+        """수종 유효 범위의 양 끝 10%를 가급적 피한 정수 테스트 구간."""
+        span = max(0.0, sp.diameter_max - sp.diameter_min)
+        low = math.ceil(sp.diameter_min + span * TEST_DIAMETER_MARGIN_RATIO)
+        high = math.floor(sp.diameter_max - span * TEST_DIAMETER_MARGIN_RATIO)
+        if low > high:
+            low = math.ceil(sp.diameter_min)
+            high = math.floor(sp.diameter_max)
+        if low > high:  # 정수 QSpinBox로 표현 가능한 값이 없는 비정상적으로 좁은 범위 방어
+            value = int(round((sp.diameter_min + sp.diameter_max) / 2))
+            return value, value
+        return low, high
+
+    def _fill_random_test_values(self) -> None:
+        """기존 선택/검증 경로를 유지하면서 유효한 테스트 값만 채운다."""
+        available = [name for name in self._names if name in self._species_map]
+        if not available:
+            return
+        quantity_low, quantity_high = (
+            TEST_TREE_QUANTITY_RANGE if self.kind == "tree" else TEST_SHRUB_QUANTITY_RANGE
+        )
+        candidate = None
+        for _ in range(20):
+            species = random.choice(available)
+            sp = self._species_map[species]
+            diameter_low, diameter_high = self._test_diameter_range(sp)
+            candidate = (
+                species,
+                random.randint(diameter_low, diameter_high),
+                random.randint(quantity_low, quantity_high),
+            )
+            if candidate != self._last_random_test_values:
+                break
+        if candidate is None:
+            return
+        species, diameter, quantity = candidate
+        self._last_random_test_values = candidate
+
+        # 검색으로 목록이 필터된 상태에서도 전체 원본 목록으로 복원한 뒤 기존
+        # currentIndexChanged → _on_species_changed 흐름을 그대로 발생시킨다.
+        self.combo.search.blockSignals(True)
+        self.combo.search.clear()
+        self.combo.search.blockSignals(False)
+        self.combo.set_items([(name, name) for name in self._names])
+        index = self.combo.combo.findData(species)
+        if index >= 0:
+            self.combo.combo.setCurrentIndex(index)
+
+        self.diameter_spin.setValue(diameter)
+        self.quantity_spin.setValue(quantity)
 
     def _on_species_changed(self, species: str) -> None:
         sp = self._species_map.get(species)
