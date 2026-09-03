@@ -10,10 +10,21 @@ Carbon2 (국내·국외 통합 모듈) 수종 데이터.
 원본 MATLAB 의 동적 평가 방식을 그대로 유지하기 위해 equation 은
 문자열로 저장하고 `equation_eval.evaluate` 에서 평가한다.
 
-라벨/식/범위 출처: 「기초 DB 자료」 시트 순번 25~39, 42~60, 68, 44 등.
+수종명(국명 라벨·학명)·식·유효범위는 **`상대생장식 자료_최종본.xlsx` 의
+「기초 DB 자료」 시트** 와 일치하도록 정합 (Ver. 1.3).
 
-원본 MATLAB 의 mojibake 한글 키는 `상대생장식 자료_최종본.xlsx` 의 동일 식·범위
-항목과 매칭하여 정상 한글로 복원하였다 (Ver. 1.0 - Carbon2 Python).
+원본 MATLAB 의 mojibake 한글 키는 같은 시트의 동일 식·범위 항목과 매칭하여
+정상 한글로 복원하였다.
+
+Excel 과 의도적으로 다른 항목 (Excel 쪽 오류로 판단):
+- 아프리카향나무(전체) 순번 26 : Excel "Y=ln(-2.31)+2.32ln(X)" 는 모든 X 에서
+  음수 로그라 계산 불가. 이웃한 순번 42·43 과 같은 로그-로그 형식
+  "ln(Y)=-2.31+2.32*ln(X)" 로 정정하여 계수 -2.31·2.32 를 보존.
+
+Excel 에 있으나 수록하지 않은 항목:
+- 순번 72 때죽나무 : "962gCm2y2" 는 임분 생산량 값이며 DBH/RCD 상대생장식이 아님.
+- 순번 79 참식나무 : 식이 "or" 분기를 포함하고 목재밀도(WD) 입력을 요구해
+  단일 평가식으로 확정할 수 없음.
 """
 from __future__ import annotations
 
@@ -53,7 +64,7 @@ DOMESTIC_SPECIES: dict[str, EquationSpecies] = {
     # 1. 후박나무 (Machilus thunbergii) - 국내, 지상부 - 서은경 등 (2017)
     "후박나무(지상부)":   EquationSpecies("ln(Y)=ln(2.20)+2.32*ln(X)", None, None),
     # 2. 백합나무 (Liriodendron tulipifera) - 국내, 전체 - 강민선 등 (2016)
-    "백합나무(전체)":     EquationSpecies("Y=0.063*X^2.578", None, None),
+    "백합나무(전체)":     EquationSpecies("Y=0.063*X^2.578", 6, 39),
     # 3. 종가시나무 (Quercus glauca) - 국립산림과학원 (2014)
     "종가시나무(전체)":   EquationSpecies(
         "Y=(0.021*X^2.763)+(0.072*X^2.368)+(0.071*X^1.776)+(0.128*X^2.014)", 6, 30),
@@ -97,9 +108,8 @@ DOMESTIC_SPECIES: dict[str, EquationSpecies] = {
     "메타세쿼이아(전체)": EquationSpecies("Y=0.787*X^0.551", 15, 30),
     # 17. 양버즘나무 (Platanus occidentalis) - 정준영 등 (2023)
     "양버즘나무(전체)":   EquationSpecies("Y=0.215*X^0.756", 16, 35),
-    # 18. 단풍나무 (Acer palmatum) - (석사) 김호진 (2023)
-    # 원본 MATLAB 범위 [13,26] (CSV의 6~19와 다름 — MATLAB 원본 값 유지)
-    "단풍나무(전체)":     EquationSpecies("ln(Y)=2.3864+2.0950*ln(X)", 13, 26),
+    # 18. 단풍나무 (Acer palmatum) - (석사) 김호진 (2023) - 순번 68
+    "단풍나무(전체, 경남)":     EquationSpecies("ln(Y)=2.3864+2.0950*ln(X)", 6, 19),
 
     # ───── 추가 (Excel 순번 61,62,64,65,66,69,70,71 — 단일변수) ─────
     # 19. 잣나무 (국내, 지상부) - 김성용 등 (2015) - 순번 61
@@ -122,15 +132,16 @@ DOMESTIC_SPECIES: dict[str, EquationSpecies] = {
     # 26. 밤나무 (국내, 전체, 전남) - (석사)박종원 (2015) - 순번 71 (변수: RCD cm)
     "밤나무(전체, 전남)":       EquationSpecies("Y=327.9*X^2.159", 7, 27, var1_label="RCD (cm)"),
     # 27. 신갈나무 (국내, 전체) - 권기철 & 이돈구 (2006) - 순번 67
-    #     Excel 식 자체는 X(=DBH) 단일 변수: Y=e(0.992ln(X)+1.469)+e(0.808ln(X)+1.527)
-    #     (변수 라벨 'DBH2H' 는 출처 표기일 뿐, 식에는 X 만 등장 → 단일변수로 처리)
+    #     Excel 변수 컬럼 'DBH2H' 에 따라 X = DBH^2·H 로 해석 (DBH·수고 2개 입력).
+    #     유효범위 11~22cm 는 var1(DBH) 기준.
     "신갈나무(전체)":           EquationSpecies(
-        "Y=exp(0.992*ln(X)+1.469)+exp(0.808*ln(X)+1.527)", 11, 22),
+        "Y=exp(0.992*ln(X**2*H)+1.469)+exp(0.808*ln(X**2*H)+1.527)", 11, 22,
+        var2_label="수고 H (m)", var2_min=0, var2_max=60, var2_default=10),
 
     # ───── 추가 (다변수 — 2개 입력 필요) ─────
     # 28. 잣나무 (국내, 지상부, 밀도, 경기도) - 류다운 등 (2014) - 순번 63
     #     Excel: ln(Y)=0.903ln(density)+2.0973ln(X)-3.323  (X=DBH, H=임분밀도)
-    "잣나무(지상부, 밀도)":     EquationSpecies(
+    "잣나무(지상부, 밀도, 경기도)":     EquationSpecies(
         "ln(Y)=0.903*ln(H)+2.0973*ln(X)-3.323", 15, 46,
         var2_label="임분밀도 (본/ha)", var2_min=1, var2_max=100000, var2_default=1000),
     # 29. 선버들 (국내, 지상부) - 조형진 등 (2017) - 순번 75  (변수: DBH², H)
@@ -146,8 +157,8 @@ DOMESTIC_SPECIES: dict[str, EquationSpecies] = {
 }
 
 
-# ─────────────────────────── 국외 수종 (26종) ───────────────────────────────
-# 출처: 「기초 DB 자료」 순번 25~39, 42, 43 + Position 8 (기존 18)
+# ─────────────────────────── 국외 수종 (25종) ───────────────────────────────
+# 출처: 「기초 DB 자료」 순번 25~39, 42, 43 (기존 17)
 #       + 40,41 (단일변수 추가) + 73,74,77,78,80,81 (다변수 추가)
 FOREIGN_SPECIES: dict[str, EquationSpecies] = {
     # 1. 사할린전나무 Abies sachalinensis (Takagi et al. 2010) - 순번 25
@@ -167,60 +178,60 @@ FOREIGN_SPECIES: dict[str, EquationSpecies] = {
     "차나무(전체)":           EquationSpecies("Y=164.5*X", None, None),
     # 7. 사스레피나무 Eurya japonica (Chen et al. 2017) - 순번 31
     "사스레피나무(지상부)":   EquationSpecies("ln(Y)=1.266*ln(X^2)-1.852", None, None),
-    # 8. (CSV 미발견 - 원본 MATLAB 식 유지) - 팥배나무류 추정
-    "팥배나무(지상부)":       EquationSpecies("Y=0.168*X^2.47", None, None),
-    # 9. 마가목 Sorbus aucuparia (Pol et al. 2018) - 순번 32
-    "마가목(지상부)":         EquationSpecies("Y=0.164*X^2.041", 0, 50),
-    # 10. 국수나무 Stephanandra incisa (Seo et al. 2017) - 순번 33
+    # 8. 마가목 Sorbus aucuparia (Pol et al. 2018) - 순번 32
+    "마가목(지상부)":         EquationSpecies("Y=0.164*X^2.041", None, None),
+    # 9. 국수나무 Stephanandra incisa (Seo et al. 2017) - 순번 33
     "국수나무(지상부)":       EquationSpecies("ln(Y)=ln(2.27)+2.26*ln(X)", None, None),
-    # 11. 산동백나무 Mallotus paniculatus (Feng et al. 2005) - 순번 34
+    # 10. 산동백나무 Mallotus paniculatus (Feng et al. 2005) - 순번 34
     "산동백나무(지상부)":     EquationSpecies("Y=26.475*X^0.055", None, None),
-    # 12. 박달목서 Daphniphyllum himalense (Poudel et al. 2020) - 순번 35
+    # 11. 박달목서 Daphniphyllum himalense (Poudel et al. 2020) - 순번 35
     "박달목서(지상부)":       EquationSpecies("Y=0.08234*X^1.59396", None, None),
-    # 13. 피나무 Tilia amurensis (He et al. 2020) - 순번 36
+    # 12. 피나무 Tilia amurensis (He et al. 2020) - 순번 36
     "피나무(전체)":           EquationSpecies("ln(Y)=2.459*ln(X)-2.535", None, None),
-    # 14. 산수유 Cornus officinalis (Kim et al. 2025) - 순번 37
+    # 13. 산수유 Cornus officinalis (Kim et al. 2025) - 순번 37
     "산수유(전체)":           EquationSpecies("Y=0.04*X^2.41", None, None),
-    # 15. 노린재나무 Symplocos paniculata (Xie et al. 2017) - 순번 38
+    # 14. 노린재나무 Symplocos paniculata (Xie et al. 2017) - 순번 38
     "노린재나무(전체)":       EquationSpecies("Y=0.05*X^0.94", None, None),
-    # 16. 구주소나무 Pinus sylvestris (Ovington et al. 1959) - 순번 39
+    # 15. 구주소나무 Pinus sylvestris (Ovington et al. 1959) - 순번 39
     "구주소나무(전체)":       EquationSpecies("ln(Y)=2.6*ln(X)-1.61", None, None),
-    # 17. 독일가문비나무 Picea abies (Zianis et al. 2005) - 순번 42
+    # 16. 독일가문비나무 Picea abies (Zianis et al. 2005) - 순번 42
     "독일가문비나무(전체)":   EquationSpecies("ln(Y)=-3.084+2.814*ln(X)", None, None),
-    # 18. 가문비나무 Picea mariana (Ouellet et al. 1983) - 순번 43
+    # 17. 가문비나무 Picea mariana (Ouellet et al. 1983) - 순번 43
     "가문비나무(전체)":       EquationSpecies("ln(Y)=-1.784+3.3271*ln(X)", None, None),
 
     # ───── 추가 (Excel 순번 40,41 — 단일변수) ─────
-    # 19. 포플러 (국외, 전체) - Rock (2007) - 순번 40
+    # 18. 포플러 (국외, 전체) - Rock (2007) - 순번 40
     "포플러(전체)":           EquationSpecies("Y=0.0519*X^2.545", 13, 33),
-    # 20. 비술나무 (국외, 지상부) - Alesso et al. (2021) - 순번 41
+    # 19. 비술나무 (국외, 지상부) - Alesso et al. (2021) - 순번 41
     "비술나무(지상부)":       EquationSpecies("Y=0.065*X^2.612", 1, 14),
-    # 21. 모밀잣밤나무 Castanopsis indica (Phandari & Neupane 2014) - 순번 78
-    #     Excel 식 자체는 X 단일 변수: Y=52.28*X^0.89
-    #     (변수 라벨 'RCD2H' 는 출처 표기. 식에 X 만 등장 → 단일변수로 처리)
-    "모밀잣밤나무(전체)":     EquationSpecies("Y=52.28*X^0.89", 0.8, 2.7, var1_label="RCD (cm)"),
+    # 20. 모밀잣밤나무 Castanopsis indica (Phandari & Neupane 2014) - 순번 78
+    #     Excel 변수 컬럼 'RCD2H' 에 따라 X = RCD^2·H 로 해석 (RCD·수고 2개 입력).
+    #     유효범위 0.8~2.7cm 는 var1(RCD) 기준.
+    "모밀잣밤나무(전체)":     EquationSpecies(
+        "Y=52.28*(X**2*H)**0.89", 0.8, 2.7, var1_label="RCD (cm)",
+        var2_label="수고 H (m)", var2_min=0, var2_max=60, var2_default=10),
 
     # ───── 추가 (다변수 — 2개 입력 필요) ─────
-    # 22. 멕시코수양소나무 Pinus patula (Martinez-Domninguez 2020) - 순번 73 (DBH, H)
+    # 21. 멕시코수양소나무 Pinus patula (Martinez-Domninguez 2020) - 순번 73 (DBH, H)
     #     Excel: Y=e^(-4.7483+1.7395ln(X1·X2))  (X1=DBH, X2=H)
     "멕시코수양소나무(전체)":  EquationSpecies(
         "Y=exp(-4.7483+1.7395*ln(X*H))", 5, 25,
         var2_label="수고 H (m)", var2_min=0, var2_max=60, var2_default=10),
-    # 23. 굴피나무 Platycarya strobilacea (Liu et al. 2016) - 순번 74 (DBH, H; X1²·X2)
+    # 22. 굴피나무 Platycarya strobilacea (Liu et al. 2016) - 순번 74 (DBH, H; X1²·X2)
     "굴피나무(지상부)":       EquationSpecies(
         "Y=1.9611*(X**2*H)**0.8921", None, None,
         var2_label="수고 H (m)", var2_min=0, var2_max=60, var2_default=10),
-    # 24. 서양개암나무 Corylus avellana (Pajtik et al. 2025) - 순번 77 (h, LAI)
+    # 23. 서양개암나무 Corylus avellana (Pajtik et al. 2025) - 순번 77 (h, LAI)
     #     Excel: Y=e^(-0.858+0.604·X1+0.850·X2)  (X1=수고 h, X2=LAI)
     "서양개암나무(지상부)":   EquationSpecies(
         "Y=exp(-0.858+0.604*X+0.850*H)", None, None,
         var1_label="수고 h (m)", var2_label="엽면적지수 LAI",
         var2_min=0, var2_max=15, var2_default=2),
-    # 25. 개옻나무 Toxicodendron trichocarpum (Osada et al. 2006) - 순번 80 (DBH, L; X1²·X2)
+    # 24. 개옻나무 Toxicodendron trichocarpum (Osada et al. 2006) - 순번 80 (DBH, L; X1²·X2)
     "개옻나무(지상부)":       EquationSpecies(
         "Y=0.336*(X**2*H)**0.928", 0.18, 1.73,
         var2_label="길이 L (m)", var2_min=0, var2_max=10, var2_default=1),
-    # 26. 모감주나무 Koelreuteria paniculata (He et al. 2025) - 순번 81 (DBH²H)
+    # 25. 모감주나무 Koelreuteria paniculata (He et al. 2025) - 순번 81 (DBH²H)
     "모감주나무(지상부)":     EquationSpecies(
         "Y=0.0545*(X**2*H)**0.8630+0.0155*(X**2*H)**0.8737"
         "+0.0145*(X**2*H)**0.7444+0.0307*(X**2*H)**0.8270", 28, 41,
