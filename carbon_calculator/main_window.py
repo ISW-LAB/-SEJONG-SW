@@ -32,6 +32,7 @@ from PyQt5.QtWidgets import (
 from .calculations import (
     CarbonRow, RangeViolation, calculate_carbon, project_future_carbon,
 )
+from .i18n import environment_name, species_name, tr
 from .data import (
     DEFAULT_ENVIRONMENT, SpeciesData, shrub_species_for_env, tree_species_for_env,
 )
@@ -90,7 +91,7 @@ class AddSpeciesDialog(QDialog):
         self.kind = kind  # "tree" or "shrub"
         is_tree = kind == "tree"
 
-        self.setWindowTitle("교목 추가" if is_tree else "관목 추가")
+        self.setWindowTitle(tr("교목 추가") if is_tree else tr("관목 추가"))
         self.setModal(True)
         apply_dialog_size(self, 820, 500)
 
@@ -99,7 +100,8 @@ class AddSpeciesDialog(QDialog):
         self._names = list(names)
         self._last_random_test_values: tuple[str, int, int] | None = None
         self._diameter_unit = "cm" if is_tree else "mm"
-        diameter_label = f"변수 ({'DBH' if is_tree else 'RCD'} · {self._diameter_unit})"
+        diameter_label = tr("변수 ({var} · {unit})").format(
+            var="DBH" if is_tree else "RCD", unit=self._diameter_unit)
         diameter_max = 50 if is_tree else 100
 
         body = QHBoxLayout()
@@ -108,11 +110,11 @@ class AddSpeciesDialog(QDialog):
         body.addWidget(self._build_right_panel(), 1)
 
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-        self.random_test_button = QPushButton("테스트 랜덤")
-        self.random_test_button.setToolTip("유효 범위 안의 테스트 입력값을 자동으로 채웁니다.")
+        self.random_test_button = QPushButton(tr("테스트 랜덤"))
+        self.random_test_button.setToolTip(tr("유효 범위 안의 테스트 입력값을 자동으로 채웁니다."))
         buttons.addButton(self.random_test_button, QDialogButtonBox.ActionRole)
-        buttons.button(QDialogButtonBox.Ok).setText("추가 (Ctrl+Enter)")
-        buttons.button(QDialogButtonBox.Cancel).setText("취소")
+        buttons.button(QDialogButtonBox.Ok).setText(tr("추가 (Ctrl+Enter)"))
+        buttons.button(QDialogButtonBox.Cancel).setText(tr("취소"))
         # 일반 Enter 로는 추가되지 않도록 기본 버튼 해제 (keyPressEvent 에서 Ctrl+Enter 만 허용)
         buttons.button(QDialogButtonBox.Ok).setAutoDefault(False)
         buttons.button(QDialogButtonBox.Ok).setDefault(False)
@@ -128,12 +130,12 @@ class AddSpeciesDialog(QDialog):
 
         # 콤보 변경 시 우측 정보 자동 갱신 + 기본값 로드
         self.combo.currentIndexChanged.connect(
-            lambda _i: self._on_species_changed(self.combo.currentText())
+            lambda _i: self._on_species_changed(self.combo.current_data())
         )
         self.a_spin.valueChanged.connect(self._refresh_formula)
         self.b_spin.valueChanged.connect(self._refresh_formula)
         self.cf_spin.valueChanged.connect(self._refresh_formula)
-        self._on_species_changed(self.combo.currentText())
+        self._on_species_changed(self.combo.current_data())
 
     def keyPressEvent(self, event) -> None:
         """일반 Enter 로는 닫히지 않게 하고, Ctrl+Enter 일 때만 '추가'(accept)."""
@@ -148,13 +150,13 @@ class AddSpeciesDialog(QDialog):
     # ----- 좌/우 패널 빌드 -----
 
     def _build_left_panel(self, names: List[str], diameter_label: str, diameter_max: int) -> QWidget:
-        group = QGroupBox("입력")
+        group = QGroupBox(tr("입력"))
         form = QFormLayout(group)
         form.setSpacing(10)
 
-        self.combo = SearchableComboBox("🔍 수종 검색 (예: 소나무, 회양목)")
-        self.combo.set_items([(n, n) for n in names])
-        form.addRow("카테고리 (수종)", self.combo)
+        self.combo = SearchableComboBox(tr("🔍 수종 검색 (예: 소나무, 회양목)"))
+        self.combo.set_items([(species_name(n), n) for n in names])
+        form.addRow(tr("카테고리 (수종)"), self.combo)
 
         # 직경: 입력 자체는 제한하지 않고 넓게 연다 (검증은 '추가' 클릭 시 수행).
         # diameter_max 는 더 이상 입력 상한이 아니며 표시용 정보로만 쓰인다.
@@ -166,7 +168,7 @@ class AddSpeciesDialog(QDialog):
         self.quantity_spin = NoWheelSpinBox()
         self.quantity_spin.setRange(1, 99999)
         self.quantity_spin.setValue(1)
-        form.addRow("개수 (수량)", self.quantity_spin)
+        form.addRow(tr("개수 (수량)"), self.quantity_spin)
 
         return group
 
@@ -177,7 +179,7 @@ class AddSpeciesDialog(QDialog):
         v.setSpacing(10)
 
         # (1) 상대생장식 편집
-        eq_group = QGroupBox("(1) 상대생장식 — 값 수정 시 이 행의 계산에 반영")
+        eq_group = QGroupBox(tr("(1) 상대생장식 — 값 수정 시 이 행의 계산에 반영"))
         eq_layout = QVBoxLayout(eq_group)
         eq_layout.setSpacing(8)
 
@@ -196,40 +198,40 @@ class AddSpeciesDialog(QDialog):
         self.a_spin.setRange(0.0, 9999.0)
         self.a_spin.setDecimals(8)
         self.a_spin.setSingleStep(0.0001)
-        form.addRow("계수 a", self.a_spin)
+        form.addRow(tr("계수 a"), self.a_spin)
 
         self.b_spin = NoWheelDoubleSpinBox()
         self.b_spin.setRange(0.0, 20.0)
         self.b_spin.setDecimals(4)
         self.b_spin.setSingleStep(0.01)
-        form.addRow("지수 b", self.b_spin)
+        form.addRow(tr("지수 b"), self.b_spin)
 
         self.cf_spin = NoWheelDoubleSpinBox()
         self.cf_spin.setRange(0.0, 1.0)
         self.cf_spin.setDecimals(2)
         self.cf_spin.setSingleStep(0.05)
-        form.addRow("탄소전환계수 CF", self.cf_spin)
+        form.addRow(tr("탄소전환계수 CF"), self.cf_spin)
         eq_layout.addLayout(form)
 
-        reset_btn = QPushButton("기본값으로 복원")
+        reset_btn = QPushButton(tr("기본값으로 복원"))
         reset_btn.clicked.connect(self._reset_to_defaults)
         eq_layout.addWidget(reset_btn, alignment=Qt.AlignRight)
         v.addWidget(eq_group)
 
         # (2) CSV 권장 정보 (읽기 전용)
-        info_group = QGroupBox("(2) CSV 권장 정보 (읽기 전용)")
+        info_group = QGroupBox(tr("(2) CSV 권장 정보 (읽기 전용)"))
         info_layout = QFormLayout(info_group)
         info_layout.setSpacing(6)
 
         self.range_value_label = QLabel("-")
-        info_layout.addRow("유효 직경 범위", self.range_value_label)
+        info_layout.addRow(tr("유효 직경 범위"), self.range_value_label)
 
         self.growth_value_label = QLabel("-")
-        info_layout.addRow("성장차 (1-10/11-20/21+ 년, cm/yr)", self.growth_value_label)
+        info_layout.addRow(tr("성장차 (1-10/11-20/21+ 년, cm/yr)"), self.growth_value_label)
 
         self.default_coeffs_label = QLabel("-")
         self.default_coeffs_label.setStyleSheet("color: #555;")
-        info_layout.addRow("기본 (a, b, CF)", self.default_coeffs_label)
+        info_layout.addRow(tr("기본 (a, b, CF)"), self.default_coeffs_label)
 
         v.addWidget(info_group)
         v.addStretch(1)
@@ -281,7 +283,7 @@ class AddSpeciesDialog(QDialog):
         self.combo.search.blockSignals(True)
         self.combo.search.clear()
         self.combo.search.blockSignals(False)
-        self.combo.set_items([(name, name) for name in self._names])
+        self.combo.set_items([(species_name(name), name) for name in self._names])
         index = self.combo.combo.findData(species)
         if index >= 0:
             self.combo.combo.setCurrentIndex(index)
@@ -323,7 +325,7 @@ class AddSpeciesDialog(QDialog):
         )
 
     def _reset_to_defaults(self) -> None:
-        sp = self._species_map.get(self.combo.currentText())
+        sp = self._species_map.get(self.combo.current_data())
         if sp is None:
             return
         self.a_spin.setValue(sp.a)
@@ -332,17 +334,19 @@ class AddSpeciesDialog(QDialog):
 
     def accept(self) -> None:
         """'추가' 시 유효 직경 범위를 검증. 범위 밖이면 경고 후 다이얼로그를 닫지 않는다."""
-        species = self.combo.currentText()
+        species = self.combo.current_data()
         sp = self._species_map.get(species)
         if sp is not None:
             d = self.diameter_spin.value()
             if d < sp.diameter_min or d > sp.diameter_max:
                 u = self._diameter_unit
                 QMessageBox.warning(
-                    self, "유효 직경 범위 아님",
-                    f"입력한 직경 {d:g}{u} 은(는) '{species}'의 유효 범위"
-                    f"({sp.diameter_min:g}{u} ~ {sp.diameter_max:g}{u})를 벗어납니다.\n\n"
-                    f"값을 유효 범위 안으로 수정한 뒤 다시 [추가]를 눌러 주세요.",
+                    self, tr("유효 직경 범위 아님"),
+                    tr("입력한 직경 {d:g}{u} 은(는) '{species}'의 유효 범위"
+                       "({vmin:g}{u} ~ {vmax:g}{u})를 벗어납니다.\n\n"
+                       "값을 유효 범위 안으로 수정한 뒤 다시 [추가]를 눌러 주세요.")
+                    .format(d=d, u=u, species=species_name(species),
+                            vmin=sp.diameter_min, vmax=sp.diameter_max),
                 )
                 self.diameter_spin.setFocus()
                 self.diameter_spin.selectAll()
@@ -356,7 +360,7 @@ class AddSpeciesDialog(QDialog):
         Returns: (species, diameter, quantity, override_coeffs_or_None)
         override_coeffs 는 a/b/CF 중 하나라도 기본값에서 변경된 경우에만 (a, b, cf) 튜플.
         """
-        species = self.combo.currentText()
+        species = self.combo.current_data()
         diameter = self.diameter_spin.value()
         quantity = self.quantity_spin.value()
 
@@ -402,19 +406,21 @@ class SpeciesInputRow(QFrame):
         top = QHBoxLayout()
         top.setSpacing(4)
         self.combo = NoWheelComboBox()
-        self.combo.addItems(names)
+        # 표시는 현재 언어의 수종명, 데이터는 계산에 쓰는 국명 키.
+        for _name in names:
+            self.combo.addItem(species_name(_name), _name)
         if species in names:
-            self.combo.setCurrentText(species)
+            self.combo.setCurrentIndex(names.index(species))
         # 반응형: 패널을 좁혀도 콤보가 줄어들어 삭제 버튼이 항상 보이도록.
         # (긴 수종명 때문에 최소 너비가 커져 행이 뷰포트를 넘기는 문제 방지)
         self.combo.setSizeAdjustPolicy(NoWheelComboBox.AdjustToMinimumContentsLengthWithIcon)
         self.combo.setMinimumContentsLength(3)
         self.combo.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.combo.setToolTip(self.combo.currentText())
-        self.combo.currentTextChanged.connect(self._on_species_changed)
+        self.combo.currentIndexChanged.connect(self._on_species_changed)
         top.addWidget(self.combo, 1)
 
-        self.delete_button = QPushButton("삭제")
+        self.delete_button = QPushButton(tr("삭제"))
         self.delete_button.setObjectName("deleteButton")
         self.delete_button.setFixedWidth(px(54))
         self.delete_button.clicked.connect(self._on_delete)
@@ -436,7 +442,7 @@ class SpeciesInputRow(QFrame):
         # 3행: 수량
         q_row = QHBoxLayout()
         q_row.setSpacing(4)
-        q_label = QLabel("수량")
+        q_label = QLabel(tr("수량"))
         q_label.setMinimumWidth(px(60))
         q_row.addWidget(q_label)
         self.quantity_spin = NoWheelSpinBox()
@@ -457,9 +463,9 @@ class SpeciesInputRow(QFrame):
     def _on_delete(self) -> None:
         self.deleted.emit(self)
 
-    def _on_species_changed(self, _new: str) -> None:
+    def _on_species_changed(self, _index: int) -> None:
         # 좁아진 콤보에서 텍스트가 잘려도 전체 수종명을 툴팁으로 확인 가능
-        self.combo.setToolTip(_new)
+        self.combo.setToolTip(self.combo.currentText())
         # 수종을 인라인 변경하면 오버라이드 해제 (기본 계수로 복원)
         if self._override_coeffs is not None:
             self._override_coeffs = None
@@ -471,12 +477,13 @@ class SpeciesInputRow(QFrame):
             return
         a, b, cf = self._override_coeffs
         self.override_label.setText(
-            f"⚙ 사용자 식 적용: a={a:g}, b={b:g}, CF={cf:g}"
+            tr("⚙ 사용자 식 적용: a={a:g}, b={b:g}, CF={cf:g}").format(a=a, b=b, cf=cf)
         )
         self.override_label.setVisible(True)
 
     def values(self) -> Tuple[str, int, int]:
-        return self.combo.currentText(), self.diameter_spin.value(), self.quantity_spin.value()
+        return (self.combo.currentData(), self.diameter_spin.value(),
+                self.quantity_spin.value())
 
     def override_coeffs(self) -> Optional[OverrideCoeffs]:
         return self._override_coeffs
@@ -489,7 +496,7 @@ class MainWindow(QMainWindow):
     def __init__(self, environment: str = DEFAULT_ENVIRONMENT,
                  region_name: str = "", area_w: int = 0, area_h: int = 0):
         super().__init__()
-        self.setWindowTitle("복원본지 탄소저장량 측정 모듈 (Ver. 1.1 - Python)")
+        self.setWindowTitle(tr("복원본지 탄소저장량 측정 모듈 (Ver. 1.1 - Python)"))
         # 창 크기는 combined_window(통합 실행 진입점 main.py) 에서 설정.
         # centralWidget 만 사용되므로 이 창 자체의 크기는 영향 없음.
 
@@ -559,23 +566,23 @@ class MainWindow(QMainWindow):
         layout.addWidget(tabs, 1)
 
         # 교목 탭
-        tree_tab, self.tree_rows_layout = self._build_input_tab("tree", "+ 교목 추가")
-        tabs.addTab(tree_tab, "교목")
+        tree_tab, self.tree_rows_layout = self._build_input_tab("tree", tr("+ 교목 추가"))
+        tabs.addTab(tree_tab, tr("교목"))
 
         # 관목 탭
-        shrub_tab, self.shrub_rows_layout = self._build_input_tab("shrub", "+ 관목 추가")
-        tabs.addTab(shrub_tab, "관목")
+        shrub_tab, self.shrub_rows_layout = self._build_input_tab("shrub", tr("+ 관목 추가"))
+        tabs.addTab(shrub_tab, tr("관목"))
 
         # 하단 보조 버튼 행: [전체 초기화] [Excel로 저장]
         actions = QHBoxLayout()
         actions.setSpacing(6)
-        self.clear_button = QPushButton("전체 초기화")
+        self.clear_button = QPushButton(tr("전체 초기화"))
         self.clear_button.setObjectName("deleteButton")
         self.clear_button.setCursor(Qt.PointingHandCursor)
         self.clear_button.clicked.connect(self.on_clear)
         actions.addWidget(self.clear_button)
 
-        self.save_button = QPushButton("Excel로 저장")
+        self.save_button = QPushButton(tr("Excel로 저장"))
         self.save_button.setObjectName("accentButton")
         self.save_button.setCursor(Qt.PointingHandCursor)
         self.save_button.clicked.connect(self.on_save_excel)
@@ -583,7 +590,7 @@ class MainWindow(QMainWindow):
         layout.addLayout(actions)
 
         # 계산 버튼 (주 액션 — 스타일은 전역 테마의 #calcButton 규칙)
-        self.calc_button = QPushButton("계   산")
+        self.calc_button = QPushButton(tr("계   산"))
         self.calc_button.setObjectName("calcButton")
         font = QFont()
         font.setPointSize(pt(18))
@@ -626,7 +633,7 @@ class MainWindow(QMainWindow):
         v.addWidget(scroll, 1)
 
         # 안내 라벨 (행이 비었을 때 보임)
-        empty_hint = QLabel("아직 추가된 항목이 없습니다.\n위의 추가 버튼을 눌러 입력하세요.")
+        empty_hint = QLabel(tr("아직 추가된 항목이 없습니다.\n위의 추가 버튼을 눌러 입력하세요."))
         empty_hint.setAlignment(Qt.AlignCenter)
         empty_hint.setStyleSheet("color: #888; padding: 12px;")
         # 안내는 스크롤 컨테이너 내부에 함께 둠
@@ -696,34 +703,34 @@ class MainWindow(QMainWindow):
         self.shrub_value_label = self._make_value_field("0.00")
         self.total_value_label = self._make_value_field("0.00")
 
-        v.addLayout(self._gauge_row("교목 탄소저장량 (kgC)", self.tree_gauge, self.tree_value_label))
-        v.addLayout(self._gauge_row("관목 탄소저장량 (kgC)", self.shrub_gauge, self.shrub_value_label))
-        v.addLayout(self._gauge_row("총 탄소저장량 (kgC)",  self.total_gauge, self.total_value_label))
+        v.addLayout(self._gauge_row(tr("교목 탄소저장량 (kgC)"), self.tree_gauge, self.tree_value_label))
+        v.addLayout(self._gauge_row(tr("관목 탄소저장량 (kgC)"), self.shrub_gauge, self.shrub_value_label))
+        v.addLayout(self._gauge_row(tr("총 탄소저장량 (kgC)"),  self.total_gauge, self.total_value_label))
 
         # 그래프 영역: [교목 추정 / 교목 기여도 / 관목 추정 / 관목 기여도] sub tab.
         # 2-row 동시 배치는 그래프가 작아 보이므로, 각 그래프가 전체 영역을 차지하도록 탭 분리.
         self.tree_canvas = MatplotlibCanvas(width=7, height=4)
-        self.tree_canvas.show_message("계산 버튼을 눌러주세요")
+        self.tree_canvas.show_message(tr("계산 버튼을 눌러주세요"))
         self.tree_pie_canvas = MatplotlibCanvas(width=5, height=4)
-        self.tree_pie_canvas.show_message("계산 버튼을 눌러주세요")
+        self.tree_pie_canvas.show_message(tr("계산 버튼을 눌러주세요"))
         self.shrub_canvas = MatplotlibCanvas(width=7, height=4)
-        self.shrub_canvas.show_message("계산 버튼을 눌러주세요")
+        self.shrub_canvas.show_message(tr("계산 버튼을 눌러주세요"))
         self.shrub_pie_canvas = MatplotlibCanvas(width=5, height=4)
-        self.shrub_pie_canvas.show_message("계산 버튼을 눌러주세요")
+        self.shrub_pie_canvas.show_message(tr("계산 버튼을 눌러주세요"))
 
         graph_tabs = QTabWidget()
         graph_tabs.setDocumentMode(True)
-        graph_tabs.addTab(self._build_estimation_tab("tree"), "교목 추정")
-        graph_tabs.addTab(self._build_pie_tab("tree"), "교목 기여도")
-        graph_tabs.addTab(self._build_estimation_tab("shrub"), "관목 추정")
-        graph_tabs.addTab(self._build_pie_tab("shrub"), "관목 기여도")
+        graph_tabs.addTab(self._build_estimation_tab("tree"), tr("교목 추정"))
+        graph_tabs.addTab(self._build_pie_tab("tree"), tr("교목 기여도"))
+        graph_tabs.addTab(self._build_estimation_tab("shrub"), tr("관목 추정"))
+        graph_tabs.addTab(self._build_pie_tab("shrub"), tr("관목 기여도"))
         # 지역별 3D 시각화는 독립 모듈에 위임한다. 기존 계산/그래프 경로에는 개입하지 않는다.
         self.visualization_tab = VegetationVisualizationTab(
             snapshot_provider=self._build_visualization_snapshot,
             fingerprint_provider=self._visualization_fingerprint,
             parent=self,
         )
-        graph_tabs.addTab(self.visualization_tab, "시각화")
+        graph_tabs.addTab(self.visualization_tab, tr("시각화"))
         self._graph_tabs = graph_tabs
         self.visualization_tab.year_changed.connect(self._on_visualization_year_changed)
         graph_tabs.currentChanged.connect(self._on_result_tab_changed)
@@ -734,8 +741,8 @@ class MainWindow(QMainWindow):
         tables.setContentsMargins(0, 0, 0, 0)
         self.tree_table = self._make_result_table()
         self.shrub_table = self._make_result_table()
-        tables.addLayout(self._table_box("교목 결과 (DBH·cm)", self.tree_table))
-        tables.addLayout(self._table_box("관목 결과 (RCD·mm)", self.shrub_table))
+        tables.addLayout(self._table_box(tr("교목 결과 (DBH·cm)"), self.tree_table))
+        tables.addLayout(self._table_box(tr("관목 결과 (RCD·mm)"), self.shrub_table))
 
         # 그래프(sub tab) ↔ 결과 테이블 사이 높이를 세로 드래그로 조절
         body_splitter = QSplitter(Qt.Vertical)
@@ -821,7 +828,7 @@ class MainWindow(QMainWindow):
         # 수종(0열)이 flex — 남는 폭을 흡수해 패널 폭에 정확히 맞춤
         table = ResultTable(flex_col=0)
         table.setColumnCount(4)
-        table.setHorizontalHeaderLabels(["수종", "직경", "수량", "탄소량(kgC)"])
+        table.setHorizontalHeaderLabels([tr("수종"), tr("직경"), tr("수량"), tr("탄소량(kgC)")])
         table.verticalHeader().setVisible(False)
         table.setEditTriggers(QTableWidget.NoEditTriggers)
         table.setAlternatingRowColors(True)
@@ -891,20 +898,22 @@ class MainWindow(QMainWindow):
         # (요구사항 4) 총 개수 1,000 초과 경고 — 계산은 이미 끝났고, 막지 않는다.
         count_warnings: List[str] = []
         if tree_qty > 1000:
-            count_warnings.append(f"교목 총 개수가 {tree_qty:,}주로 1,000주를 초과합니다.")
+            count_warnings.append(
+                tr("교목 총 개수가 {n:,}주로 1,000주를 초과합니다.").format(n=tree_qty))
         if shrub_qty > 1000:
-            count_warnings.append(f"관목 총 개수가 {shrub_qty:,}주로 1,000주를 초과합니다.")
+            count_warnings.append(
+                tr("관목 총 개수가 {n:,}주로 1,000주를 초과합니다.").format(n=shrub_qty))
 
         # 경고 표시 (범위 위반 → 대량 입력 순). 어느 쪽도 계산을 중단시키지 않는다.
         warnings = w_tree + w_shrub
         if warnings:
             QMessageBox.warning(
-                self, "입력값 오류 (해당 행 제외)", "\n".join(warnings)
+                self, tr("입력값 오류 (해당 행 제외)"), "\n".join(warnings)
             )
         if count_warnings:
             QMessageBox.warning(
-                self, "대량 입력 경고",
-                "\n".join(count_warnings) + "\n\n계산은 정상적으로 수행되었습니다.",
+                self, tr("대량 입력 경고"),
+                "\n".join(count_warnings) + tr("\n\n계산은 정상적으로 수행되었습니다."),
             )
 
     def on_clear(self) -> None:
@@ -944,10 +953,10 @@ class MainWindow(QMainWindow):
         self.total_value_label.setText("0.00")
 
         # 그래프·파이 초기 메시지로 복귀
-        self.tree_canvas.show_message("계산 버튼을 눌러주세요")
-        self.shrub_canvas.show_message("계산 버튼을 눌러주세요")
-        self.tree_pie_canvas.show_message("계산 버튼을 눌러주세요")
-        self.shrub_pie_canvas.show_message("계산 버튼을 눌러주세요")
+        self.tree_canvas.show_message(tr("계산 버튼을 눌러주세요"))
+        self.shrub_canvas.show_message(tr("계산 버튼을 눌러주세요"))
+        self.tree_pie_canvas.show_message(tr("계산 버튼을 눌러주세요"))
+        self.shrub_pie_canvas.show_message(tr("계산 버튼을 눌러주세요"))
 
     @staticmethod
     def _entry_to_row(e: _Entry) -> CarbonRow:
@@ -1091,8 +1100,9 @@ class MainWindow(QMainWindow):
                     continue
                 if diameter < base.diameter_min or diameter > base.diameter_max:
                     warnings.append(
-                        f"{species}: 유효 범위 {base.diameter_min:g}~"
-                        f"{base.diameter_max:g}{unit} 밖의 입력은 제외됨"
+                        tr("{species}: 유효 범위 {vmin:g}~{vmax:g}{unit} 밖의 입력은 제외됨")
+                        .format(species=species_name(species), vmin=base.diameter_min,
+                                vmax=base.diameter_max, unit=unit)
                     )
                     continue
                 override = input_row.override_coeffs()
@@ -1139,7 +1149,8 @@ class MainWindow(QMainWindow):
         table.setRowCount(len(rows))
         for i, row in enumerate(rows):
             for j, val in enumerate(row.as_table_row()):
-                text = str(val)
+                # 0열(수종)은 현재 언어의 표시명으로 (영문 모드: 학명)
+                text = species_name(val) if j == 0 else str(val)
                 item = QTableWidgetItem(text)
                 # 수종(0열)은 좌측 정렬(긴 이름 가독), 숫자 열은 가운데 정렬
                 item.setTextAlignment(Qt.AlignVCenter | (Qt.AlignLeft if j == 0 else Qt.AlignCenter))
@@ -1178,7 +1189,8 @@ class MainWindow(QMainWindow):
                 e.species_data, e.diameter, e.quantity, years=50, mm_scale=mm,
             )
             e.curve = carbon
-            e.label = f"{e.species} ({e.diameter:g}{e.unit}·{e.quantity:g}주)"
+            e.label = tr("{species} ({d:g}{unit}·{n:g}주)").format(
+                species=species_name(e.species), d=e.diameter, unit=e.unit, n=e.quantity)
             years_ref = years
         if kind == "tree":
             self._tree_years = years_ref
@@ -1197,16 +1209,16 @@ class MainWindow(QMainWindow):
         for e in entries:
             cb = QCheckBox(e.label)
             cb.setChecked(True)
-            cb.setToolTip(f"{e.label} 곡선 표시")
+            cb.setToolTip(tr("{label} 곡선 표시").format(label=e.label))
             cb.toggled.connect(lambda _c, k=kind: self._render_projection(k))
             layout.addWidget(cb)
             checks.append(cb)
 
         total_cb = None
         if len(entries) >= 2:  # 항목이 2개 이상일 때만 총합 곡선/체크박스 제공
-            total_cb = QCheckBox("총 탄소저장량")
+            total_cb = QCheckBox(tr("총 탄소저장량"))
             total_cb.setChecked(True)
-            total_cb.setToolTip("전체 항목 합계 곡선 표시")
+            total_cb.setToolTip(tr("전체 항목 합계 곡선 표시"))
             total_cb.setStyleSheet("QCheckBox { color: #C0392B; font-weight: bold; }")
             total_cb.toggled.connect(lambda _c, k=kind: self._render_projection(k))
             layout.addWidget(total_cb)
@@ -1226,13 +1238,13 @@ class MainWindow(QMainWindow):
         """
         if kind == "tree":
             canvas, entries, years = self.tree_canvas, self._tree_entries, self._tree_years
-            checks, total_cb, label_kr = self._tree_checks, self._tree_total_cb, "교목"
+            checks, total_cb, label_kr = self._tree_checks, self._tree_total_cb, tr("교목")
         else:
             canvas, entries, years = self.shrub_canvas, self._shrub_entries, self._shrub_years
-            checks, total_cb, label_kr = self._shrub_checks, self._shrub_total_cb, "관목"
+            checks, total_cb, label_kr = self._shrub_checks, self._shrub_total_cb, tr("관목")
 
         if years is None or not entries:
-            canvas.show_message(f"{label_kr} 정보 없음")
+            canvas.show_message(tr("{kind} 정보 없음").format(kind=label_kr))
             return
 
         series: list = []
@@ -1242,29 +1254,32 @@ class MainWindow(QMainWindow):
 
         # '총 탄소저장량' = 전체 항목의 연도별 합 (개별 항목 체크 여부와 무관하게 토글).
         if total_cb is not None and total_cb.isChecked():
-            series.append(("총 탄소저장량", years, self._sum_carbon([e.curve for e in entries]), True))
+            series.append((tr("총 탄소저장량"), years, self._sum_carbon([e.curve for e in entries]), True))
 
         if not series:
-            canvas.show_message(f"{label_kr}: 표시할 항목을 선택하세요 (그래프 위 체크박스)")
+            canvas.show_message(
+                tr("{kind}: 표시할 항목을 선택하세요 (그래프 위 체크박스)").format(kind=label_kr))
             return
 
         # 제목은 패널 상단 라벨로 표시하므로 축 제목은 끈다 (그래프 영역 확보).
         canvas.plot_multi_projection(
-            series, f"[{label_kr}] 향후 50년 탄소저장량 변동 추정", show_title=False,
+            series,
+            tr("[{kind}] 향후 50년 탄소저장량 변동 추정").format(kind=label_kr),
+            show_title=False,
         )
 
     def _render_pie(self, kind: str, entries: List[_Entry]) -> None:
         """수종별 탄소저장량 기여도 파이차트를 그린다 (기여도 sub tab)."""
         canvas = self.tree_pie_canvas if kind == "tree" else self.shrub_pie_canvas
-        label_kr = "교목" if kind == "tree" else "관목"
+        label_kr = tr("교목") if kind == "tree" else tr("관목")
         values = [e.carbon_kg for e in entries]
         if not entries or sum(values) <= 0:
-            canvas.show_message(f"[{label_kr}]\n기여도 없음")
+            canvas.show_message(tr("[{kind}]\n기여도 없음").format(kind=label_kr))
             return
-        labels = [e.species for e in entries]
+        labels = [species_name(e.species) for e in entries]
         # 제목은 패널 상단 라벨로 표시하므로 차트 제목은 끈다.
         canvas.plot_pie(
-            labels, values, title=f"{label_kr} 수종별 기여도",
+            labels, values, title=tr("{kind} 수종별 기여도").format(kind=label_kr),
             top_n=5, label_fs=10, title_fs=12, show_title=False,
         )
 
@@ -1276,8 +1291,8 @@ class MainWindow(QMainWindow):
             self.on_calculate()
         if not self._tree_entries and not self._shrub_entries:
             QMessageBox.information(
-                self, "저장할 내용 없음",
-                "저장할 입력/결과가 없습니다. 먼저 항목을 추가한 뒤 [계 산]을 눌러 주세요.",
+                self, tr("저장할 내용 없음"),
+                tr("저장할 입력/결과가 없습니다. 먼저 항목을 추가한 뒤 [계 산]을 눌러 주세요."),
             )
             return
 
@@ -1285,10 +1300,11 @@ class MainWindow(QMainWindow):
         # 최상위 창(통합 윈도우 또는 단독 창)을 부모로 삼아 다이얼로그가 올바른 위치에 뜨게 한다.
         parent = QApplication.activeWindow() or self
         # 지역별 자동 파일명: 지역명이 있으면 '탄소저장량_<지역명>.xlsx'.
-        default_name = (f"탄소저장량_{self._safe_filename(self.region_name)}.xlsx"
-                        if self.region_name else "탄소저장량_결과.xlsx")
+        default_name = (
+            tr("탄소저장량_{name}.xlsx").format(name=self._safe_filename(self.region_name))
+            if self.region_name else tr("탄소저장량_결과.xlsx"))
         path, _filter = QFileDialog.getSaveFileName(
-            parent, "Excel로 저장", default_name, "Excel 파일 (*.xlsx)",
+            parent, tr("Excel로 저장"), default_name, tr("Excel 파일 (*.xlsx)"),
         )
         if not path:
             return  # 사용자가 취소
@@ -1301,32 +1317,35 @@ class MainWindow(QMainWindow):
             export_carbon1_to_excel(path, payload)
         except PermissionError:
             QMessageBox.warning(
-                self, "저장 실패",
-                "파일이 다른 프로그램(Excel 등)에서 열려 있어 저장할 수 없습니다.\n"
-                "해당 파일을 닫고 다시 시도해 주세요.",
+                self, tr("저장 실패"),
+                tr("파일이 다른 프로그램(Excel 등)에서 열려 있어 저장할 수 없습니다.\n"
+                "해당 파일을 닫고 다시 시도해 주세요."),
             )
             return
         except Exception as exc:  # noqa: BLE001 — 사용자에게 원인 안내
-            QMessageBox.warning(self, "저장 실패", f"저장 중 오류가 발생했습니다:\n{exc}")
+            QMessageBox.warning(
+                self, tr("저장 실패"),
+                tr("저장 중 오류가 발생했습니다:\n{error}").format(error=exc))
             return
 
         QMessageBox.information(
-            self, "저장 완료", f"현재 화면(마지막 계산) 기준으로 저장되었습니다:\n{path}",
+            self, tr("저장 완료"),
+            tr("현재 화면(마지막 계산) 기준으로 저장되었습니다:\n{path}").format(path=path),
         )
 
     @staticmethod
     def _safe_filename(name: str) -> str:
         """파일명에 부적합한 문자를 _ 로 치환한 안전한 이름."""
         cleaned = re.sub(r'[\\/:*?"<>|]+', "_", (name or "").strip())
-        return cleaned or "지역"
+        return cleaned or tr("지역")
 
     def _render_graph_images(self) -> list:
         """현재 4개 그래프(교목/관목 × 추정/기여도)를 PNG 바이트로 렌더 → Excel 임베드용."""
         specs = [
-            ("교목 향후 50년 탄소저장량 변동 추정", self.tree_canvas),
-            ("교목 수종별 기여도", self.tree_pie_canvas),
-            ("관목 향후 50년 탄소저장량 변동 추정", self.shrub_canvas),
-            ("관목 수종별 기여도", self.shrub_pie_canvas),
+            (tr("교목 향후 50년 탄소저장량 변동 추정"), self.tree_canvas),
+            (tr("교목 수종별 기여도"), self.tree_pie_canvas),
+            (tr("관목 향후 50년 탄소저장량 변동 추정"), self.shrub_canvas),
+            (tr("관목 수종별 기여도"), self.shrub_pie_canvas),
         ]
         images = []
         for title, canvas in specs:
@@ -1403,10 +1422,11 @@ class MainWindow(QMainWindow):
         if total > 0:
             agg: dict = {}
             for e in entries:
+                # 집계 키는 내부 수종 키(국명) — 표시는 excel_export 가 담당한다.
                 agg[e.species] = agg.get(e.species, 0.0) + e.carbon_kg
-            for species_name, val in sorted(agg.items(), key=lambda kv: -kv[1]):
+            for name, val in sorted(agg.items(), key=lambda kv: -kv[1]):
                 contribution.append({
-                    "species": species_name, "carbon": val, "percent": val / total * 100,
+                    "species": name, "carbon": val, "percent": val / total * 100,
                 })
 
         return {

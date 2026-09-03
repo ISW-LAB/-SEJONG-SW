@@ -44,6 +44,8 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 
+from .i18n import environment_name, species_name, tr
+
 try:
     from openpyxl.drawing.image import Image as XLImage  # Pillow 필요
 except Exception:  # noqa: BLE001 — Pillow 미설치 시 이미지 임베드만 생략
@@ -61,7 +63,9 @@ LEFT   = Alignment(horizontal="left",   vertical="center")
 _THIN  = Side(style="thin", color="D8DEE4")
 BORDER = Border(left=_THIN, right=_THIN, top=_THIN, bottom=_THIN)
 
-_CATEGORIES = (("교목", "tree"), ("관목", "shrub"))
+def _categories():
+    """(표시명, 내부키) — 언어 설정 후에 평가되도록 함수로 둔다."""
+    return ((tr("교목"), "tree"), (tr("관목"), "shrub"))
 
 
 # ─────────────────────────── 공통 헬퍼 ───────────────────────────
@@ -92,7 +96,7 @@ def _num(cell, value, fmt: str = "#,##0.00") -> None:
 def _fill_projection_ws(ws, proj, kind_kr: str) -> None:
     """projection 데이터를 이미 생성된 워크시트에 기입."""
     if not proj or not proj.get("years"):
-        ws["A1"] = f"{kind_kr} 추정 데이터가 없습니다. (항목을 추가하고 계산하세요)"
+        ws["A1"] = tr("{kind} 추정 데이터가 없습니다. (항목을 추가하고 계산하세요)").format(kind=kind_kr)
         ws["A1"].font = TITLE_FONT
         _set_widths(ws, [50])
         return
@@ -102,10 +106,10 @@ def _fill_projection_ws(ws, proj, kind_kr: str) -> None:
     total      = proj.get("total")
     show_total = total is not None
 
-    headers = ["경과연도(년)"]
-    headers += [s["label"] + ("" if s["checked"] else " (미표시)") for s in series]
+    headers = [tr("경과연도(년)")]
+    headers += [s["label"] + ("" if s["checked"] else tr(" (미표시)")) for s in series]
     if show_total:
-        headers.append("총 탄소저장량(전체 합)")
+        headers.append(tr("총 탄소저장량(전체 합)"))
     for c, h in enumerate(headers, 1):
         ws.cell(1, c, h)
     _style_header_row(ws, 1, len(headers))
@@ -126,33 +130,33 @@ def _fill_projection_ws(ws, proj, kind_kr: str) -> None:
 
 
 def _sheet_projection(wb: Workbook, payload: dict, key: str, kind_kr: str) -> None:
-    ws = wb.create_sheet(f"추정_{kind_kr}")
+    ws = wb.create_sheet(tr("추정_{kind}").format(kind=kind_kr))
     _fill_projection_ws(ws, payload[key].get("projection"), kind_kr)
 
 
 # ─────────────────────────── 기여도 시트 ───────────────────────────
 
 def _sheet_contribution(wb: Workbook, payload: dict) -> None:
-    ws = wb.create_sheet("기여도")
-    headers = ["구분", "수종", "탄소량(kgC)", "비율(%)"]
+    ws = wb.create_sheet(tr("기여도"))
+    headers = [tr("구분"), tr("수종"), tr("탄소량(kgC)"), tr("비율(%)")]
     for c, h in enumerate(headers, 1):
         ws.cell(1, c, h)
     _style_header_row(ws, 1, len(headers))
 
     r = 2
     any_row = False
-    for kind_kr, key in _CATEGORIES:
+    for kind_kr, key in _categories():
         for item in payload[key].get("contribution", []):
             any_row = True
             ws.cell(r, 1, kind_kr).alignment = CENTER
-            ws.cell(r, 2, item["species"]).alignment = LEFT
+            ws.cell(r, 2, species_name(item["species"])).alignment = LEFT
             _num(ws.cell(r, 3), round(item["carbon"],  2), "#,##0.00")
             _num(ws.cell(r, 4), round(item["percent"], 2), "0.00")
             for c in (1, 2):
                 ws.cell(r, c).border = BORDER
             r += 1
     if not any_row:
-        ws.cell(2, 1, "기여도 데이터가 없습니다.")
+        ws.cell(2, 1, tr("기여도 데이터가 없습니다."))
 
     _set_widths(ws, [8, 30, 16, 12])
 
@@ -161,19 +165,19 @@ def _sheet_contribution(wb: Workbook, payload: dict) -> None:
 
 def _sheet_graphs(wb: Workbook, payload: dict) -> None:
     """그래프(추정/기여도) PNG 이미지를 한 시트에 임베드."""
-    ws = wb.create_sheet("그래프")
+    ws = wb.create_sheet(tr("그래프"))
     ws.column_dimensions["A"].width = 18
     images = payload.get("images") or []
     if XLImage is None:
-        ws["A1"] = "이미지 임베드 불가 (Pillow 미설치)"
+        ws["A1"] = tr("이미지 임베드 불가 (Pillow 미설치)")
         return
     if not images:
-        ws["A1"] = "그래프 이미지가 없습니다."
+        ws["A1"] = tr("그래프 이미지가 없습니다.")
         return
 
     row = 1
     for item in images:
-        ws.cell(row, 1, item.get("title", "그래프")).font = TITLE_FONT
+        ws.cell(row, 1, item.get("title", tr("그래프"))).font = TITLE_FONT
         try:
             img = XLImage(io.BytesIO(item["png"]))
             target_w = 760
@@ -184,7 +188,7 @@ def _sheet_graphs(wb: Workbook, payload: dict) -> None:
             ws.add_image(img, f"A{row + 1}")
             span = max(18, int((img.height or 360) / 18) + 3)
         except Exception:  # noqa: BLE001
-            ws.cell(row + 1, 1, "(이미지 로드 실패)")
+            ws.cell(row + 1, 1, tr("(이미지 로드 실패)"))
             span = 3
         row += span
 
@@ -199,9 +203,9 @@ def export_carbon1_to_excel(path: str, payload: dict) -> None:
     wb = Workbook()
     # 첫 번째 시트(Workbook 기본 활성 시트)를 교목 추정으로 사용
     ws        = wb.active
-    ws.title  = "추정_교목"
-    _fill_projection_ws(ws, payload["tree"].get("projection"), "교목")
-    _sheet_projection(wb, payload, "shrub", "관목")
+    ws.title  = tr("추정_교목")
+    _fill_projection_ws(ws, payload["tree"].get("projection"), tr("교목"))
+    _sheet_projection(wb, payload, "shrub", tr("관목"))
     _sheet_contribution(wb, payload)
     _sheet_graphs(wb, payload)
     wb.save(path)
@@ -229,13 +233,13 @@ def _category_totals_by_year(cat_payload: dict) -> tuple:
 def _sheet_all_projections(wb: Workbook, payloads: list) -> None:
     """지역별_추정치: 경과연도 × (교목합계 · 관목합계 · 총합계) per region."""
     ws       = wb.active
-    ws.title = "지역별_추정치"
+    ws.title = tr("지역별_추정치")
 
     # ── 지역별 데이터 수집 ─────────────────────────────────────────────────
     region_data = []
     ref_years   = None
     for p in payloads:
-        name         = (p.get("region") or {}).get("name") or "지역"
+        name         = (p.get("region") or {}).get("name") or tr("지역")
         ty, tt       = _category_totals_by_year(p["tree"])
         sy, st       = _category_totals_by_year(p["shrub"])
         years        = ty if ty else sy
@@ -244,7 +248,7 @@ def _sheet_all_projections(wb: Workbook, payloads: list) -> None:
         region_data.append({"name": name, "tree": tt, "shrub": st})
 
     if ref_years is None:
-        ws["A1"] = "추정 데이터가 없습니다."
+        ws["A1"] = tr("추정 데이터가 없습니다.")
         ws["A1"].font = TITLE_FONT
         return
 
@@ -258,12 +262,12 @@ def _sheet_all_projections(wb: Workbook, payloads: list) -> None:
     total_cols = 1 + n_regions * 3
 
     # Row 1: 제목 (전체 열 병합)
-    ws.cell(1, 1, "지역별 탄소저장량 추정치 (경과연도별)").font = TITLE_FONT
+    ws.cell(1, 1, tr("지역별 탄소저장량 추정치 (경과연도별)")).font = TITLE_FONT
     if total_cols > 1:
         ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=total_cols)
 
     # Row 2~3: 경과연도(년) 2·3행 병합 + 지역명 3열씩 병합
-    c       = ws.cell(2, 1, "경과연도(년)")
+    c       = ws.cell(2, 1, tr("경과연도(년)"))
     c.fill  = HEADER_FILL; c.font = HEADER_FONT; c.alignment = CENTER; c.border = BORDER
     ws.merge_cells(start_row=2, start_column=1, end_row=3, end_column=1)
 
@@ -277,7 +281,7 @@ def _sheet_all_projections(wb: Workbook, payloads: list) -> None:
     # Row 3: 교목합계 · 관목합계 · 총합계 (지역별 반복)
     col = 2
     for _ in region_data:
-        for sub in ["교목합계(kgC)", "관목합계(kgC)", "총합계(kgC)"]:
+        for sub in [tr("교목합계(kgC)"), tr("관목합계(kgC)"), tr("총합계(kgC)")]:
             c      = ws.cell(3, col, sub)
             c.fill = SUB_HEADER_FILL
             c.font = Font(bold=True, color="FFFFFF")
@@ -303,12 +307,12 @@ def _sheet_all_projections(wb: Workbook, payloads: list) -> None:
 
 def _sheet_all_contributions(wb: Workbook, payloads: list) -> None:
     """탄소_기여도: 모든 지역의 수종별 기여도를 지역 구분 헤더를 붙여 나열."""
-    ws = wb.create_sheet("탄소_기여도")
-    ws.cell(1, 1, "지역별 수종 탄소 기여도").font = TITLE_FONT
+    ws = wb.create_sheet(tr("탄소_기여도"))
+    ws.cell(1, 1, tr("지역별 수종 탄소 기여도")).font = TITLE_FONT
 
     r = 3
     for p in payloads:
-        name = (p.get("region") or {}).get("name") or "지역"
+        name = (p.get("region") or {}).get("name") or tr("지역")
 
         # 지역 구분 헤더
         rc           = ws.cell(r, 1, f"▶  {name}")
@@ -317,17 +321,17 @@ def _sheet_all_contributions(wb: Workbook, payloads: list) -> None:
         r += 1
 
         # 열 헤더
-        for c, h in enumerate(["구분", "수종", "탄소량(kgC)", "비율(%)"], 1):
+        for c, h in enumerate([tr("구분"), tr("수종"), tr("탄소량(kgC)"), tr("비율(%)")], 1):
             ws.cell(r, c, h)
         _style_header_row(ws, r, 4)
         r += 1
 
         any_row = False
-        for kind_kr, key in _CATEGORIES:
+        for kind_kr, key in _categories():
             for item in p[key].get("contribution", []):
                 any_row = True
                 ws.cell(r, 1, kind_kr).alignment = CENTER
-                ws.cell(r, 2, item["species"]).alignment = LEFT
+                ws.cell(r, 2, species_name(item["species"])).alignment = LEFT
                 _num(ws.cell(r, 3), round(item["carbon"],  2), "#,##0.00")
                 _num(ws.cell(r, 4), round(item["percent"], 2), "0.00")
                 for ci in (1, 2):
@@ -335,7 +339,7 @@ def _sheet_all_contributions(wb: Workbook, payloads: list) -> None:
                 r += 1
 
         if not any_row:
-            ws.cell(r, 1, "기여도 데이터가 없습니다.").alignment = LEFT
+            ws.cell(r, 1, tr("기여도 데이터가 없습니다.")).alignment = LEFT
             r += 1
 
         r += 1  # 빈 줄 구분
@@ -345,13 +349,13 @@ def _sheet_all_contributions(wb: Workbook, payloads: list) -> None:
 
 def _sheet_comparison(wb: Workbook, comparison_data: list) -> None:
     """지역_비교분석: 지역별 총 탄소저장량 비교 테이블."""
-    ws = wb.create_sheet("지역_비교분석")
+    ws = wb.create_sheet(tr("지역_비교분석"))
 
-    ws.cell(1, 1, "지역별 총 탄소저장량 비교 분석").font = TITLE_FONT
+    ws.cell(1, 1, tr("지역별 총 탄소저장량 비교 분석")).font = TITLE_FONT
     ws.merge_cells("A1:G1")
 
-    headers = ["지역명", "면적(㎡)", "환경", "교목(kgC)", "관목(kgC)",
-               "총 탄소저장량(kgC)", "단위면적당(kgC/㎡)"]
+    headers = [tr("지역명"), tr("면적(㎡)"), tr("환경"), tr("교목(kgC)"), tr("관목(kgC)"),
+               tr("총 탄소저장량(kgC)"), tr("단위면적당(kgC/㎡)")]
     for c, h in enumerate(headers, 1):
         ws.cell(2, c, h)
     _style_header_row(ws, 2, len(headers))
@@ -360,7 +364,7 @@ def _sheet_comparison(wb: Workbook, comparison_data: list) -> None:
         ws.cell(i, 1, d["name"]).alignment = LEFT
         ws.cell(i, 1).border = BORDER
         _num(ws.cell(i, 2), d["area"],             "#,##0")
-        ws.cell(i, 3, d["env"]).alignment = LEFT
+        ws.cell(i, 3, environment_name(d["env"])).alignment = LEFT
         ws.cell(i, 3).border = BORDER
         _num(ws.cell(i, 4), round(d["tree"],    2))
         _num(ws.cell(i, 5), round(d["shrub"],   2))
@@ -372,7 +376,7 @@ def _sheet_comparison(wb: Workbook, comparison_data: list) -> None:
         t_tree  = sum(d["tree"]  for d in comparison_data)
         t_shrub = sum(d["shrub"] for d in comparison_data)
         grand   = t_tree + t_shrub
-        c       = ws.cell(sr, 1, "전체 합계")
+        c       = ws.cell(sr, 1, tr("전체 합계"))
         c.font  = BOLD_FONT; c.alignment = LEFT; c.border = BORDER
         _num(ws.cell(sr, 4), round(t_tree,  2))
         _num(ws.cell(sr, 5), round(t_shrub, 2))
@@ -421,11 +425,11 @@ def _render_comparison_chart_png(comparison_data: list):
                     ha="center", va="bottom", fontsize=11, fontweight="bold")
 
         ax.set_xticks([])
-        ax.set_ylabel("탄소저장량 (kgC)")
+        ax.set_ylabel(tr("탄소저장량 (kgC)"))
         ax.set_ylim(0, top * 1.15 if top > 0 else 1.0)
-        ax.set_title("지역별 총 탄소저장량 비교", fontweight="bold")
+        ax.set_title(tr("지역별 총 탄소저장량 비교"), fontweight="bold")
         ncol = 1 + (len(names) - 1) // 12
-        ax.legend(title="지역", loc="upper left", bbox_to_anchor=(1.01, 1.0),
+        ax.legend(title=tr("지역"), loc="upper left", bbox_to_anchor=(1.01, 1.0),
                   fontsize=10, framealpha=0.95, borderaxespad=0.0, ncol=max(1, ncol))
         ax.grid(True, axis="y", alpha=0.3)
 
@@ -438,11 +442,11 @@ def _render_comparison_chart_png(comparison_data: list):
 
 def _sheet_all_graphs(wb: Workbook, payloads: list, comparison_data: list) -> None:
     """그래프: 지역 비교 차트를 맨 위에, 이어서 지역별 그래프를 임베드."""
-    ws = wb.create_sheet("그래프")
+    ws = wb.create_sheet(tr("그래프"))
     ws.column_dimensions["A"].width = 18
 
     if XLImage is None:
-        ws["A1"] = "이미지 임베드 불가 (Pillow 미설치)"
+        ws["A1"] = tr("이미지 임베드 불가 (Pillow 미설치)")
         return
 
     row = 1
@@ -450,7 +454,7 @@ def _sheet_all_graphs(wb: Workbook, payloads: list, comparison_data: list) -> No
     # 1) 지역 비교 막대 차트
     cmp_png = _render_comparison_chart_png(comparison_data)
     if cmp_png:
-        ws.cell(row, 1, "지역별 탄소저장량 비교").font = TITLE_FONT
+        ws.cell(row, 1, tr("지역별 탄소저장량 비교")).font = TITLE_FONT
         try:
             img = XLImage(io.BytesIO(cmp_png))
             target_w   = 900
@@ -461,23 +465,23 @@ def _sheet_all_graphs(wb: Workbook, payloads: list, comparison_data: list) -> No
             ws.add_image(img, f"A{row + 1}")
             span = max(20, int((img.height or 360) / 18) + 3)
         except Exception:  # noqa: BLE001
-            ws.cell(row + 1, 1, "(이미지 로드 실패)")
+            ws.cell(row + 1, 1, tr("(이미지 로드 실패)"))
             span = 3
         row += span
 
     # 2) 지역별 그래프
     for p in payloads:
-        region_name = (p.get("region") or {}).get("name") or "지역"
+        region_name = (p.get("region") or {}).get("name") or tr("지역")
         images      = p.get("images") or []
         if not images:
             continue
 
-        c      = ws.cell(row, 1, f"── {region_name} 지역 ──")
+        c      = ws.cell(row, 1, tr("── {name} 지역 ──").format(name=region_name))
         c.font = Font(bold=True, size=12, color="246B43")
         row   += 1
 
         for item in images:
-            ws.cell(row, 1, item.get("title", "그래프")).font = TITLE_FONT
+            ws.cell(row, 1, item.get("title", tr("그래프"))).font = TITLE_FONT
             try:
                 img = XLImage(io.BytesIO(item["png"]))
                 target_w   = 760
@@ -488,7 +492,7 @@ def _sheet_all_graphs(wb: Workbook, payloads: list, comparison_data: list) -> No
                 ws.add_image(img, f"A{row + 1}")
                 span = max(18, int((img.height or 360) / 18) + 3)
             except Exception:  # noqa: BLE001
-                ws.cell(row + 1, 1, "(이미지 로드 실패)")
+                ws.cell(row + 1, 1, tr("(이미지 로드 실패)"))
                 span = 3
             row += span
 

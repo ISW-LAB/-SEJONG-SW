@@ -11,6 +11,7 @@ from vtkmodules.vtkCommonCore import vtkPoints
 from vtkmodules.vtkCommonDataModel import vtkCellArray, vtkPolyData
 from vtkmodules.vtkRenderingCore import vtkActor, vtkGlyph3DMapper, vtkPointPicker, vtkPolyDataMapper
 
+from ..i18n import tr
 from .growth_models import render_states
 from .models import RegionVisualizationSnapshot, RenderState
 from .species_profiles import profile_by_key
@@ -98,7 +99,7 @@ class VegetationRenderer:
         z_max, _step, label_count, label_format = self._nice_height_axis(max_height)
         self.plotter.remove_bounds_axes()
         axis = self.plotter.show_grid(
-            xtitle="X (m)", ytitle="Y (m)", ztitle="수고 (m)",
+            xtitle="X (m)", ytitle="Y (m)", ztitle=tr("수고 (m)"),
             bounds=(0, self.snapshot.area_w, 0, self.snapshot.area_h, 0, z_max),
             n_zlabels=label_count,
         )

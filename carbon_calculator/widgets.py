@@ -13,6 +13,7 @@ from PyQt5.QtWidgets import (
     QListWidgetItem, QSpinBox, QTableWidget, QVBoxLayout, QWidget,
 )
 
+from .i18n import tr
 from .ui_scale import pt, px
 
 
@@ -80,8 +81,10 @@ class SearchableComboBox(QWidget):
 
     SUGGEST_LIMIT = 10   # 추천 리스트 최대 표시 개수
 
-    def __init__(self, placeholder: str = "🔍 검색 (예: 소나무)", parent=None):
+    def __init__(self, placeholder: str | None = None, parent=None):
         super().__init__(parent)
+        if placeholder is None:
+            placeholder = tr("🔍 검색 (예: 소나무)")
         self._all: list[tuple[str, object]] = []
 
         v = QVBoxLayout(self)

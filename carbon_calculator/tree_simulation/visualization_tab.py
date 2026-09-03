@@ -11,6 +11,7 @@ from PyQt5.QtWidgets import (
 )
 from pyvistaqt import QtInteractor
 
+from ..i18n import environment_name, species_name, tr
 from ..ui_scale import pt, px
 from .models import RegionVisualizationSnapshot
 from .detail_dialog import VegetationDetailDialog
@@ -50,7 +51,7 @@ class VegetationVisualizationTab(QWidget):
         root.setContentsMargins(4, 4, 4, 4)
         root.setSpacing(5)
 
-        self.region_label = QLabel("시각화를 새로고침하세요.")
+        self.region_label = QLabel(tr("시각화를 새로고침하세요."))
         font = self.region_label.font(); font.setPointSize(pt(11)); font.setBold(True)
         self.region_label.setFont(font)
         self.region_label.setStyleSheet("color: #246B43; padding: 3px;")
@@ -70,9 +71,9 @@ class VegetationVisualizationTab(QWidget):
 
         controls = QFrame()
         row = QHBoxLayout(controls); row.setContentsMargins(4, 2, 4, 2)
-        self.play_btn = QPushButton("재생")
-        self.pause_btn = QPushButton("일시정지")
-        self.refresh_btn = QPushButton("새로고침")
+        self.play_btn = QPushButton(tr("재생"))
+        self.pause_btn = QPushButton(tr("일시정지"))
+        self.refresh_btn = QPushButton(tr("새로고침"))
         self.play_btn.clicked.connect(self.play)
         self.pause_btn.clicked.connect(self.pause)
         self.refresh_btn.clicked.connect(self.refresh_snapshot)
@@ -83,12 +84,12 @@ class VegetationVisualizationTab(QWidget):
         self.year_slider.valueChanged.connect(self._on_year_changed)
         row.addWidget(self.year_slider, 1)
         row.addWidget(QLabel("Year 50"))
-        self.year_label = QLabel("현재: 0년")
+        self.year_label = QLabel(tr("현재: 0년"))
         row.addWidget(self.year_label)
         row.addWidget(self.refresh_btn)
         root.addWidget(controls)
 
-        self.summary_label = QLabel("총 탄소저장량: 0.00 kgC · 교목 0주 / 관목 0주")
+        self.summary_label = QLabel(tr("총 탄소저장량: 0.00 kgC · 교목 0주 / 관목 0주"))
         self.summary_label.setAlignment(Qt.AlignCenter)
         self.summary_label.setStyleSheet(
             "background: #FFFFFF; border: 1px solid #D8DEE4; border-radius: 5px; padding: 5px;"
@@ -100,11 +101,11 @@ class VegetationVisualizationTab(QWidget):
         root.addWidget(self.status_label)
 
         note = QLabel(
-            "DBH/RCD 성장과 탄소저장량은 현재 프로젝트의 수종별 데이터를 사용합니다. "
+            tr("DBH/RCD 성장과 탄소저장량은 현재 프로젝트의 수종별 데이터를 사용합니다. "
             "수고, 수관 크기 및 풍성함은 현재 제공된 실측/생장식 데이터가 없어 "
             "3D 표현을 위한 기본 시각화 모델을 사용합니다. "
             "단순 3D 형상에서 식별하기 쉽도록 줄기 굵기는 화면 표시용으로 보정됩니다. "
-            "Year 0은 현재 입력 상태입니다."
+            "Year 0은 현재 입력 상태입니다.")
         )
         note.setWordWrap(True)
         note.setStyleSheet("color: #6B7780; font-size: 10px; padding: 2px 4px;")
@@ -115,19 +116,23 @@ class VegetationVisualizationTab(QWidget):
         try:
             snapshot = self._snapshot_provider()
         except Exception as exc:  # 사용자에게 3D 계층 오류를 알리고 기존 앱은 유지
-            self.status_label.setText(f"시각화 갱신 실패: {exc}")
+            self.status_label.setText(
+                tr("시각화 갱신 실패: {error}").format(error=exc))
             return
         self._snapshot = snapshot
         self.region_label.setText(
-            f"지역: {snapshot.region_name or '지역'} · 환경: {snapshot.environment} · "
-            f"면적: {snapshot.area_w:g} × {snapshot.area_h:g} m "
-            f"({snapshot.area_w * snapshot.area_h:,.0f} ㎡)"
+            tr("지역: {name} · 환경: {env} · 면적: {w:g} × {h:g} m").format(
+                name=snapshot.region_name or tr("지역"),
+                env=environment_name(snapshot.environment),
+                w=snapshot.area_w, h=snapshot.area_h,
+            )
+            + f"  ({snapshot.area_w * snapshot.area_h:,.0f} m²)"
         )
         if not snapshot.instances:
             self.plotter.clear_actors()
             self.renderer.clear()
-            self.plotter.add_text("표시할 유효 교목/관목 입력이 없습니다.", position="upper_left")
-            self.status_label.setText("항목을 추가한 뒤 계산하거나 새로고침하세요.")
+            self.plotter.add_text(tr("표시할 유효 교목/관목 입력이 없습니다."), position="upper_left")
+            self.status_label.setText(tr("항목을 추가한 뒤 계산하거나 새로고침하세요."))
         else:
             self.plotter.clear_actors()
             self.renderer.set_snapshot(snapshot)
@@ -145,18 +150,19 @@ class VegetationVisualizationTab(QWidget):
         except Exception:
             return
         if self._snapshot is None or fingerprint != self._snapshot.input_fingerprint:
-            self.status_label.setText("입력이 변경되어 최신 상태로 시각화를 갱신합니다.")
+            self.status_label.setText(tr("입력이 변경되어 최신 상태로 시각화를 갱신합니다."))
             self.refresh_snapshot()
 
     def _on_year_changed(self, year: int) -> None:
-        self.year_label.setText(f"현재: {year}년")
+        self.year_label.setText(tr("현재: {year}년").format(year=year))
         if self._snapshot is None:
             return
         self.renderer.update_year(year)
         carbon = float(self._snapshot.total_carbon_by_year_kgc[year])
         self.summary_label.setText(
-            f"총 탄소저장량: {carbon:,.2f} kgC · "
-            f"교목 {self._snapshot.tree_count:,}주 / 관목 {self._snapshot.shrub_count:,}주"
+            tr("총 탄소저장량: {carbon:,.2f} kgC · 교목 {trees:,}주 / 관목 {shrubs:,}주")
+            .format(carbon=carbon, trees=self._snapshot.tree_count,
+                    shrubs=self._snapshot.shrub_count)
         )
         self.year_changed.emit(year)
 
@@ -180,8 +186,10 @@ class VegetationVisualizationTab(QWidget):
         diameter_name = "DBH" if info.kind == "tree" else "RCD"
         QToolTip.showText(
             QCursor.pos(),
-            f"{info.species}\n{diameter_name}: {info.diameter:,.2f} {info.diameter_unit}\n"
-            f"탄소저장량: {info.carbon_kgc:,.4f} kgC/주\n클릭하면 상세 정보를 표시합니다.",
+            f"{species_name(info.species)}\n"
+            f"{diameter_name}: {info.diameter:,.2f} {info.diameter_unit}\n"
+            + tr("탄소저장량: {carbon:,.4f} kgC/주\n클릭하면 상세 정보를 표시합니다.")
+            .format(carbon=info.carbon_kgc),
             self.plotter,
         )
 

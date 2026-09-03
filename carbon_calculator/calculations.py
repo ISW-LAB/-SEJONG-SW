@@ -13,6 +13,7 @@ from typing import Iterable
 import numpy as np
 
 from .data import SpeciesData
+from .i18n import species_name, tr
 
 
 class RangeViolation(Exception):
@@ -24,7 +25,8 @@ class RangeViolation(Exception):
         self.vmax = vmax
         self.unit = unit
         super().__init__(
-            f"{species}의 유효 직경 범위는 {vmin:g}{unit} ~ {vmax:g}{unit} 입니다."
+            tr("{species}의 유효 직경 범위는 {vmin:g}{unit} ~ {vmax:g}{unit} 입니다.")
+            .format(species=species_name(species), vmin=vmin, vmax=vmax, unit=unit)
         )
 
 
