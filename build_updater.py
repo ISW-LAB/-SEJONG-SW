@@ -90,14 +90,14 @@ def collect_bundled_datas() -> list[tuple[str, str]]:
         if p.exists():
             datas.append((str(p), "bundled_src"))
         else:
-            print(f"[경고] 번들 대상 누락: {p}")
+            print(f"[warning] Bundled file missing: {p}")
 
     icon = find_icon()
     if icon:
         datas.append((str(icon), "bundled_src"))
 
     if not _CC_DIR.exists():
-        sys.exit(f"[오류] carbon_calculator 패키지를 찾을 수 없습니다: {_CC_DIR}")
+        sys.exit(f"[error] carbon_calculator package not found: {_CC_DIR}")
     # 하위 기능 패키지(tree_simulation 등)도 상대 디렉터리를 보존해 재귀적으로 번들한다.
     for py in sorted(_CC_DIR.rglob("*.py")):
         rel_parent = py.parent.relative_to(_CC_DIR).as_posix()
@@ -110,12 +110,12 @@ def collect_bundled_datas() -> list[tuple[str, str]]:
 
 
 def parse_args() -> argparse.Namespace:
-    p = argparse.ArgumentParser(description="Build 수종데이터업데이터.exe")
-    p.add_argument("--onedir",        action="store_true", help="폴더 형태로 빌드.")
-    p.add_argument("--debug",         action="store_true", help="콘솔창 표시.")
-    p.add_argument("--upx",           action="store_true", help="UPX 압축 활성화.")
-    p.add_argument("--clean-cache",   action="store_true", help="build/, dist/ 삭제.")
-    p.add_argument("--rebuild-venv",  action="store_true", help="빌드 venv 강제 재생성.")
+    p = argparse.ArgumentParser(description="Build the species data updater executable")
+    p.add_argument("--onedir",        action="store_true", help="Build as a folder.")
+    p.add_argument("--debug",         action="store_true", help="Show the console window.")
+    p.add_argument("--upx",           action="store_true", help="Enable UPX compression.")
+    p.add_argument("--clean-cache",   action="store_true", help="Delete build/ and dist/.")
+    p.add_argument("--rebuild-venv",  action="store_true", help="Force re-creation of the build venv.")
     return p.parse_args()
 
 
@@ -123,7 +123,7 @@ def clean_build_artifacts() -> None:
     for name in ("build", "dist"):
         path = HERE / name
         if path.exists():
-            print(f"[정리] {path}")
+            print(f"[clean] {path}")
             shutil.rmtree(path, ignore_errors=True)
 
 
@@ -136,20 +136,20 @@ def ensure_build_venv(rebuild: bool = False) -> Path:
     python = _venv_python(BUILD_VENV)
 
     if _OLD_VENV.exists():
-        print(f"[환경] 이전 빌드 venv 삭제: {_OLD_VENV}")
+        print(f"[env] Removing previous build venv: {_OLD_VENV}")
         shutil.rmtree(_OLD_VENV, ignore_errors=True)
 
     if rebuild and BUILD_VENV.exists():
-        print(f"[환경] 기존 빌드 venv 삭제: {BUILD_VENV}")
+        print(f"[env] Removing existing build venv: {BUILD_VENV}")
         shutil.rmtree(BUILD_VENV, ignore_errors=True)
 
     if not python.exists():
-        print(f"[환경] 빌드 전용 가상환경 생성 중 (최초 1회, 몇 분 소요)...")
-        print(f"       위치: {BUILD_VENV}")
+        print(f"[env] Creating the dedicated build venv (first run, takes a few minutes)...")
+        print(f"       location: {BUILD_VENV}")
         _venv_mod.create(str(BUILD_VENV), with_pip=True, clear=False)
 
     if not python.exists():
-        sys.exit(f"[오류] 빌드 venv Python 생성에 실패했습니다: {python}")
+        sys.exit(f"[error] Failed to create the build venv interpreter: {python}")
 
     # pip 보장 (일부 배포판은 ensurepip 필요)
     subprocess.run(
@@ -158,32 +158,32 @@ def ensure_build_venv(rebuild: bool = False) -> Path:
     )
 
     if _venv_ready(python):
-        print(f"[환경] 기존 빌드 venv 재사용: {BUILD_VENV}")
+        print(f"[env] Reusing existing build venv: {BUILD_VENV}")
         return BUILD_VENV
 
-    print("[환경] pip 업그레이드 중...")
+    print("[env] Upgrading pip...")
     subprocess.run(
         [str(python), "-m", "pip", "install", "--quiet", "--upgrade", "pip"],
         check=True,
     )
     if REQ_FILE.exists():
-        print(f"[환경] requirements.txt 패키지 설치 중...")
+        print(f"[env] Installing packages from requirements.txt...")
         subprocess.run(
             [str(python), "-m", "pip", "install", "--quiet", "-r", str(REQ_FILE)],
             check=True,
         )
     else:
-        print("[환경] PyQt5 설치 중...")
+        print("[env] Installing PyQt5...")
         subprocess.run(
             [str(python), "-m", "pip", "install", "--quiet", "PyQt5"],
             check=True,
         )
-    print("[환경] PyInstaller 설치 중...")
+    print("[env] Installing PyInstaller...")
     subprocess.run(
         [str(python), "-m", "pip", "install", "--quiet", "pyinstaller"],
         check=True,
     )
-    print("[환경] 빌드 환경 준비 완료.")
+    print("[env] Build environment ready.")
     return BUILD_VENV
 
 
@@ -224,10 +224,53 @@ _qt5_binaries = [
     if _keep_bin(src)
 ]
 
+# ── conda 파이썬 대응: Library\bin 의 DLL 동봉 ──────────────────────────────
+# conda 배포판은 _ctypes(ffi.dll)·pyexpat(libexpat.dll)·_ssl·_sqlite3 등이 의존하는
+# DLL 을 <base_prefix>\Library\bin 에 둔다. PyInstaller 는 이 경로를 검색하지 않아
+# 그대로 빌드하면 실행 시 "DLL load failed while importing _ctypes" 로 죽는다.
+# 표준 확장모듈(.pyd)의 import 테이블을 훑어 실제로 필요한 DLL 만 골라 담는다.
+import glob as _glob
+import sys as _sys
+
+def _collect_conda_dlls():
+    _base = getattr(_sys, 'base_prefix', _sys.prefix)
+    _libbin = os.path.join(_base, 'Library', 'bin')
+    _dlls = os.path.join(_base, 'DLLs')
+    if not (os.path.isdir(_libbin) and os.path.isdir(_dlls)):
+        return []                      # conda 가 아니면 할 일 없음
+    _avail = {os.path.basename(p).lower(): p
+              for p in _glob.glob(os.path.join(_libbin, '*.dll'))}
+    try:
+        from PyInstaller.depend import bindepend as _bd
+    except Exception:
+        _bd = None
+    _needed = set()
+    if _bd is not None:
+        for _pyd in _glob.glob(os.path.join(_dlls, '*.pyd')):
+            try:
+                _imports = _bd.get_imports(_pyd)
+            except Exception:
+                continue
+            for _imp in _imports:
+                _nm = _imp if isinstance(_imp, str) else _imp[0]
+                _low = os.path.basename(_nm).lower()
+                if _low in _avail:
+                    _needed.add(_low)
+    if not _needed:
+        # bindepend 를 못 쓰면 알려진 필수 DLL 로 대체
+        _needed = {n for n in ('ffi.dll', 'ffi-8.dll', 'libffi-8.dll', 'libexpat.dll',
+                               'libcrypto-3-x64.dll', 'libssl-3-x64.dll', 'sqlite3.dll',
+                               'libbz2.dll', 'liblzma.dll') if n in _avail}
+    _out = [(_avail[n], '.') for n in sorted(_needed)]
+    print('[spec] conda DLL %d개 동봉: %s' % (len(_out), ', '.join(sorted(_needed))))
+    return _out
+
+_conda_binaries = _collect_conda_dlls()
+
 a = Analysis(
     [__ENTRY__],
     pathex=[__HERE__],
-    binaries=_qt5_binaries,
+    binaries=_qt5_binaries + _conda_binaries,
     datas=__DATAS__,
     hiddenimports=['PyQt5.sip'],
     hookspath=[],
@@ -324,7 +367,7 @@ def _write_spec(onedir: bool, debug: bool, upx: bool) -> Path:
     icon_line = f"icon={repr(str(icon))}," if icon else "# icon=None"
 
     datas = collect_bundled_datas()
-    print(f"[번들] 내장 소스 {len(datas)}개 파일 (carbon_calculator + main.py + build_exe.py 등)")
+    print(f"[bundle] {len(datas)} source files bundled (carbon_calculator + main.py + build_exe.py, ...)")
 
     analysis = (
         _SPEC_ANALYSIS
@@ -355,7 +398,7 @@ def main() -> int:
     args = parse_args()
 
     if not ENTRY.exists():
-        sys.exit(f"[오류] 진입점 파일을 찾을 수 없습니다: {ENTRY}")
+        sys.exit(f"[error] Entry point not found: {ENTRY}")
 
     if args.clean_cache:
         clean_build_artifacts()
@@ -366,17 +409,17 @@ def main() -> int:
 
     python_exe = _venv_python(build_venv)
     if not python_exe.exists():
-        sys.exit(f"[오류] 빌드 venv Python 을 찾을 수 없습니다: {python_exe}")
+        sys.exit(f"[error] Build venv interpreter not found: {python_exe}")
 
     print()
     print("=" * 70)
-    print("PyInstaller 빌드 시작 (updater)")
-    print(f"  진입점:    {ENTRY}")
+    print("Starting PyInstaller build (updater)")
+    print(f"  entry point: {ENTRY}")
     print(f"  spec:      {spec_path}")
-    print(f"  앱 이름:   {APP_NAME}")
-    print(f"  빌드 환경: {build_venv}")
-    print(f"  모드:      {'onedir' if args.onedir else 'onefile'}")
-    print(f"  콘솔:      {'표시' if args.debug else '숨김 (GUI)'}")
+    print(f"  app name:    {APP_NAME}")
+    print(f"  build env:   {build_venv}")
+    print(f"  mode:        {'onedir' if args.onedir else 'onefile'}")
+    print(f"  console:     {'shown' if args.debug else 'hidden (GUI)'}")
     print("=" * 70)
 
     result = subprocess.run(
@@ -394,7 +437,7 @@ def main() -> int:
     if result.returncode != 0:
         print()
         print("=" * 70)
-        print("[실패] PyInstaller 빌드가 실패했습니다.")
+        print("[failed] The PyInstaller build failed.")
         print("=" * 70)
         return 1
 
@@ -410,18 +453,18 @@ def main() -> int:
     print("=" * 70)
     if out.exists():
         exe_mb = out.stat().st_size / 1048576
-        print(f"[성공] 빌드 완료: {out}")
-        print(f"       exe 크기: {exe_mb:.1f} MB")
+        print(f"[success] Build complete: {out}")
+        print(f"       executable size: {exe_mb:.1f} MB")
         if out_dir:
             dir_mb = sum(f.stat().st_size for f in out_dir.rglob("*") if f.is_file()) / 1048576
-            print(f"       폴더 합계: {dir_mb:.1f} MB")
+            print(f"       folder total: {dir_mb:.1f} MB")
         print()
-        print("  ── 배포 방법 ──────────────────────────────────────────────")
-        print(f"  {out.name} 를 Code 폴더(build_exe.py 와 같은 위치)에 복사하세요.")
-        print("  사용자는 이 exe 만 더블클릭하면 JSON 로드 → 빌드를 실행할 수 있습니다.")
+        print("  -- How to distribute ------------------------------------------")
+        print(f"  {out.name} next to build_exe.py in the source folder.")
+        print("  Users can then double-click this executable to load a JSON and rebuild.")
         print("  ────────────────────────────────────────────────────────────")
     else:
-        print(f"[실패] 산출물을 찾을 수 없습니다: {out}")
+        print(f"[failed] Build output not found: {out}")
     print("=" * 70)
 
     return 0 if out.exists() else 1
