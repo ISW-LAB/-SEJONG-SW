@@ -5,6 +5,7 @@ from PyQt5.QtCore import QPoint, Qt
 from PyQt5.QtGui import QColor, QPainter, QPen, QPixmap
 from PyQt5.QtWidgets import QDialog, QFormLayout, QHBoxLayout, QLabel, QPushButton, QVBoxLayout
 
+from ..i18n import species_name, tr
 from ..ui_scale import px
 from .inspection import InstanceInspection
 
@@ -52,7 +53,8 @@ def _profile_pixmap(info: InstanceInspection) -> QPixmap:
 class VegetationDetailDialog(QDialog):
     def __init__(self, info: InstanceInspection, parent=None):
         super().__init__(parent)
-        self.setWindowTitle(f"{info.species} · Year {info.year} 개체 정보")
+        self.setWindowTitle(tr("{species} · Year {year} 개체 정보")
+                            .format(species=species_name(info.species), year=info.year))
         self.setModal(False)
         self.setMinimumWidth(px(590))
         root = QVBoxLayout(self)
@@ -60,34 +62,40 @@ class VegetationDetailDialog(QDialog):
         image = QLabel()
         image.setPixmap(_profile_pixmap(info))
         image.setAlignment(Qt.AlignCenter)
-        image.setToolTip("현재 3D render profile을 단순화한 수형 예시이며 실제 수종 사진이 아닙니다.")
+        image.setToolTip(tr("현재 3D render profile을 단순화한 수형 예시이며 실제 수종 사진이 아닙니다."))
         body.addWidget(image)
 
         form = QFormLayout()
-        kind_label = "교목" if info.kind == "tree" else "관목"
+        kind_label = tr("교목") if info.kind == "tree" else tr("관목")
         diameter_name = "DBH" if info.kind == "tree" else "RCD"
         rows = (
-            ("수종", info.species), ("구분", kind_label), ("경과 연도", f"Year {info.year}"),
-            ("같은 입력 그룹 수량", f"{info.group_quantity:,}주"),
-            (f"현재 {diameter_name}", f"{info.diameter:,.2f} {info.diameter_unit}"),
-            ("현재 개체 탄소저장량", f"{info.carbon_kgc:,.4f} kgC/주"),
-            ("상대생장식 계수", f"a={info.a:g} · b={info.b:g} · CF={info.cf:g}"),
-            ("직경 성장률", f"1~10년 {info.growth_y10:g} · 11~20년 {info.growth_y20:g} · 21년+ {info.growth_y21:g} cm/yr"),
-            ("지역 내 위치", f"X {info.x_m:,.2f} m · Y {info.y_m:,.2f} m"),
-            ("표현 줄기 직경 (시각화용)", f"{info.rendered_trunk_diameter_m:,.3f} m"),
-            ("표현 수고 (시각화용)", f"{info.rendered_height_m:,.2f} m"),
-            ("표현 수관 폭 (시각화용)", f"{info.crown_width_m:,.2f} m"),
-            ("표현 수관 길이 (시각화용)", f"{info.crown_length_m:,.2f} m"),
-            ("표현 풍성함 (시각화용)", f"{info.visual_development * 100:,.0f}%"),
-            ("데이터 구분", "DBH/RCD·탄소: 기존 프로젝트 데이터 / 수고·수관·풍성함: visual fallback"),
+            (tr("수종"), species_name(info.species)), (tr("구분"), kind_label),
+            (tr("경과 연도"), f"Year {info.year}"),
+            (tr("같은 입력 그룹 수량"),
+             tr("{n:,}주").format(n=info.group_quantity)),
+            (tr("현재 {name}").format(name=diameter_name),
+             f"{info.diameter:,.2f} {info.diameter_unit}"),
+            (tr("현재 개체 탄소저장량"),
+             tr("{carbon:,.4f} kgC/주").format(carbon=info.carbon_kgc)),
+            (tr("상대생장식 계수"), f"a={info.a:g} · b={info.b:g} · CF={info.cf:g}"),
+            (tr("직경 성장률"),
+             tr("1~10년 {y10:g} · 11~20년 {y20:g} · 21년+ {y21:g} cm/yr")
+             .format(y10=info.growth_y10, y20=info.growth_y20, y21=info.growth_y21)),
+            (tr("지역 내 위치"), f"X {info.x_m:,.2f} m · Y {info.y_m:,.2f} m"),
+            (tr("표현 줄기 직경 (시각화용)"), f"{info.rendered_trunk_diameter_m:,.3f} m"),
+            (tr("표현 수고 (시각화용)"), f"{info.rendered_height_m:,.2f} m"),
+            (tr("표현 수관 폭 (시각화용)"), f"{info.crown_width_m:,.2f} m"),
+            (tr("표현 수관 길이 (시각화용)"), f"{info.crown_length_m:,.2f} m"),
+            (tr("표현 풍성함 (시각화용)"), f"{info.visual_development * 100:,.0f}%"),
+            (tr("데이터 구분"), tr("DBH/RCD·탄소: 기존 프로젝트 데이터 / 수고·수관·풍성함: visual fallback")),
         )
         for label, value in rows:
             field = QLabel(value); field.setWordWrap(True); field.setTextInteractionFlags(Qt.TextSelectableByMouse)
             form.addRow(label, field)
         body.addLayout(form, 1)
         root.addLayout(body)
-        note = QLabel("왼쪽 그림과 모든 '표현' 값은 3D 시각화용이며 탄소 계산에는 영향을 주지 않습니다.")
+        note = QLabel(tr("왼쪽 그림과 모든 '표현' 값은 3D 시각화용이며 탄소 계산에는 영향을 주지 않습니다."))
         note.setWordWrap(True); note.setStyleSheet("color:#6B7780; padding:4px;")
         root.addWidget(note)
-        close_btn = QPushButton("닫기"); close_btn.clicked.connect(self.close)
+        close_btn = QPushButton(tr("닫기")); close_btn.clicked.connect(self.close)
         root.addWidget(close_btn, alignment=Qt.AlignRight)

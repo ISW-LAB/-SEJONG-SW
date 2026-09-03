@@ -18,6 +18,8 @@ from __future__ import annotations
 
 import math
 
+from .i18n import tr
+
 
 # eval 환경에 노출할 허용 함수
 _ALLOWED_FUNCS = {
@@ -66,9 +68,12 @@ def evaluate(equation_str: str, x: float, h: float | None = None) -> float:
             rhs = eqn.split("Y=", 1)[1]
             return float(eval(rhs, env))
     except Exception as ex:
-        raise EvaluationError(f"식 평가 실패: {equation_str!r} (X={x}): {ex}") from ex
+        raise EvaluationError(
+            tr("식 평가 실패: {equation!r} (X={x}): {error}")
+            .format(equation=equation_str, x=x, error=ex)) from ex
 
-    raise EvaluationError(f"인식할 수 없는 식 형식: {equation_str!r}")
+    raise EvaluationError(
+        tr("인식할 수 없는 식 형식: {equation!r}").format(equation=equation_str))
 
 
 class EvaluationError(Exception):

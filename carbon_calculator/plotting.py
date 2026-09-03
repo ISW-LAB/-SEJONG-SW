@@ -19,6 +19,8 @@ from matplotlib.figure import Figure  # noqa: E402
 
 from PyQt5.QtWidgets import QSizePolicy  # noqa: E402
 
+from .i18n import species_name, tr  # noqa: E402
+
 
 # 기준 해상도(1920×1080, scale=1.0)에서의 matplotlib 폰트 크기.
 # set_plot_font_scale 로 화면 스케일을 곱해 작은 모니터에서 비례 축소한다.
@@ -94,8 +96,11 @@ class MatplotlibCanvas(FigureCanvasQTAgg):
         self.ax.clear()
         self.draw_idle()
 
-    def plot_projection(self, years, carbon, title: str, ylabel: str = "탄소저장량 (kgC)",
-                        xlabel: str = "경과 기간 (Years)") -> None:
+    def plot_projection(self, years, carbon, title: str, ylabel: str | None = None,
+                        xlabel: str | None = None) -> None:
+        # 기본값을 import 시점에 굳히면 언어 설정 전 문자열이 박힌다 → 호출 시 해석.
+        ylabel = tr("탄소저장량 (kgC)") if ylabel is None else ylabel
+        xlabel = tr("경과 기간 (Years)") if xlabel is None else xlabel
         self._teardown_hover()
         self.ax.clear()
         line, = self.ax.plot(
@@ -111,8 +116,8 @@ class MatplotlibCanvas(FigureCanvasQTAgg):
         self.draw_idle()
 
     def plot_multi_projection(self, series, title: str,
-                              ylabel: str = "탄소저장량 (kgC)",
-                              xlabel: str = "경과 기간 (Years)",
+                              ylabel: str = tr("탄소저장량 (kgC)"),
+                              xlabel: str = tr("경과 기간 (Years)"),
                               show_title: bool = True) -> None:
         """
         여러 추정 곡선을 한 그래프에 중첩 표시.
@@ -124,7 +129,7 @@ class MatplotlibCanvas(FigureCanvasQTAgg):
         self._teardown_hover()
         self.ax.clear()
         if not series:
-            self.show_message("표시할 항목이 없습니다.")
+            self.show_message(tr("표시할 항목이 없습니다."))
             return
 
         color_cycle = plt.rcParams["axes.prop_cycle"].by_key().get("color", [])
@@ -276,7 +281,7 @@ class MatplotlibCanvas(FigureCanvasQTAgg):
         ann.set_va(va)
 
     def plot_pie(self, labels: list[str], values: list[float],
-                 title: str = "수종별 탄소저장량 기여도", top_n: int = 5,
+                 title: str = tr("수종별 탄소저장량 기여도"), top_n: int = 5,
                  label_fs: float = 17, title_fs: float = 20,
                  show_title: bool = True) -> None:
         """
@@ -295,14 +300,14 @@ class MatplotlibCanvas(FigureCanvasQTAgg):
         for k, v in zip(labels, values):
             agg[k] = agg.get(k, 0.0) + v
         if not agg or sum(agg.values()) <= 0:
-            self.show_message("표시할 데이터가 없습니다.")
+            self.show_message(tr("표시할 데이터가 없습니다."))
             return
 
         sorted_items = sorted(agg.items(), key=lambda kv: kv[1], reverse=True)
         if len(sorted_items) > top_n:
             major = sorted_items[:top_n]
             others = sum(v for _, v in sorted_items[top_n:])
-            plot_labels = [k for k, _ in major] + ["기타"]
+            plot_labels = [k for k, _ in major] + [tr("기타")]
             plot_values = [v for _, v in major] + [others]
         else:
             plot_labels = [k for k, _ in sorted_items]
@@ -326,8 +331,8 @@ class MatplotlibCanvas(FigureCanvasQTAgg):
 
     def plot_region_bars(self, names: list[str], tree_vals: list[float],
                          shrub_vals: list[float],
-                         ylabel: str = "탄소저장량 (kgC)", show_title: bool = True,
-                         title: str = "지역별 탄소저장량 비교") -> None:
+                         ylabel: str = tr("탄소저장량 (kgC)"), show_title: bool = True,
+                         title: str = tr("지역별 탄소저장량 비교")) -> None:
         """지역별 **총** 탄소저장량 비교 막대 차트.
 
         각 지역(=막대)을 **고유 색상 + 해치 패턴**(/, ., x …)으로 자동 구분하고, 범례를
@@ -337,7 +342,7 @@ class MatplotlibCanvas(FigureCanvasQTAgg):
         self._teardown_hover()
         self.ax.clear()
         if not names:
-            self.show_message("비교할 지역이 없습니다.")
+            self.show_message(tr("비교할 지역이 없습니다."))
             return
 
         totals = [t + s for t, s in zip(tree_vals, shrub_vals)]
@@ -370,7 +375,7 @@ class MatplotlibCanvas(FigureCanvasQTAgg):
         # 범례: 지역명, 축 바깥 오른쪽. 지역이 많으면 열 수를 늘려 세로 넘침 방지.
         ncol = 1 + (len(names) - 1) // 12
         self.ax.legend(
-            title="지역", loc="upper left", bbox_to_anchor=(1.01, 1.0),
+            title=tr("지역"), loc="upper left", bbox_to_anchor=(1.01, 1.0),
             fontsize=_fs(10), framealpha=0.95, borderaxespad=0.0, ncol=max(1, ncol),
         )
         self.ax.grid(True, axis="y", alpha=0.3)

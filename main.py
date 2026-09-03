@@ -5,21 +5,56 @@
 Carbon1 (자생복원종) 과 Carbon2 (국내·국외 통합) 를 하나의 창에서 탭으로 전환.
 이 파일이 탄소저장량측정모듈(핵심 소프트웨어)의 유일한 실행 진입점이며,
 build_exe.py 가 이 파일을 빌드 대상으로 삼는다.
+
+표시 언어(한국어/English)는 최초 실행 시 선택하고 이후 저장값을 사용한다.
+`--lang ko|en` 로 지정하면 선택 창 없이 그 언어로 시작한다(메뉴에서 언어를 바꿀 때
+프로그램이 스스로 이 옵션을 붙여 재실행한다).
 """
+import argparse
 import sys
 
 from PyQt5.QtWidgets import QApplication
 
+from carbon_calculator import i18n
 from carbon_calculator.combined_window import CombinedMainWindow
 from carbon_calculator.font_config import setup_application_fonts
+from carbon_calculator.language_dialog import LanguageDialog
 from carbon_calculator.plotting import set_plot_font_scale
 from carbon_calculator.theme import apply_theme
 from carbon_calculator.ui_scale import enable_high_dpi, ui_scale
 
 
+def _parse_args(argv):
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument("--lang", choices=(i18n.LANG_KO, i18n.LANG_EN), default=None)
+    args, _rest = parser.parse_known_args(argv[1:])
+    return args
+
+
+def _resolve_language(args) -> str:
+    """--lang → 저장값 → 선택 창 순서로 표시 언어를 정한다."""
+    if args.lang:
+        return args.lang
+
+    saved = i18n.load_saved_language()
+    if saved:
+        return saved
+
+    dialog = LanguageDialog(i18n.LANG_KO)
+    dialog.exec_()
+    chosen = dialog.chosen()
+    i18n.save_language(chosen)
+    return chosen
+
+
 def main() -> int:
+    args = _parse_args(sys.argv)
+
     enable_high_dpi()                  # QApplication 생성 전 (고해상도 스케일링)
     app = QApplication(sys.argv)
+
+    # 언어 결정은 폰트/테마 적용보다 앞선다 (선택 창은 자체 문구를 사용).
+    i18n.set_language(_resolve_language(args))
 
     scale = ui_scale(app)              # 모니터 크기 기준 UI 스케일 1회 계산
     setup_application_fonts(app, scale)
