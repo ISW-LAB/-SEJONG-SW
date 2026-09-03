@@ -175,6 +175,11 @@ def _load_from_bundled_json() -> None:
     except Exception:
         return
 
+    # 영문 표기(SPECIES_EN·ENVIRONMENTS_EN)도 같은 JSON 에서 가져온다 —
+    # 수종데이터업데이터로 새 수종을 넣으면 학명도 함께 갱신되도록.
+    from .i18n import load_json_overrides as _load_i18n_overrides
+    _load_i18n_overrides(_raw)
+
     global TREE_BASE, SHRUB_SPECIES, TREE_SPECIES, TREE_NAMES, SHRUB_NAMES
 
     _new_tree: dict = {}

@@ -19,13 +19,88 @@
       "var1": "첫 번째 입력 변수 라벨",
       "var2": "두 번째 입력 변수 {label,min,max,default}. 단일변수 식에는 없음."
     },
-    "carbon2_carbon_factor": 0.5
+    "carbon2_carbon_factor": 0.5,
+    "species_en_note": "SPECIES_EN: 꼬리표를 뗀 기본 수종명 → 학명. 영문 모드 표기에 사용되며 (지상부)/(전체, 경남) 등 괄호 꼬리표는 프로그램이 자동으로 영문 변환한다. 새 수종을 추가할 때 이 표에도 학명을 넣으면 영문 모드에 반영된다."
   },
   "ENVIRONMENTS": [
     "산불피해지 자연복원",
     "산불피해지 인공복원",
     "채석장 인공복원"
   ],
+  "ENVIRONMENTS_EN": {
+    "산불피해지 자연복원": "Post-fire site, natural restoration",
+    "산불피해지 인공복원": "Post-fire site, artificial restoration",
+    "채석장 인공복원": "Quarry site, artificial restoration"
+  },
+  "SPECIES_EN": {
+    "소나무": "Pinus densiflora",
+    "곰솔": "Pinus thunbergii",
+    "편백": "Chamaecyparis obtusa",
+    "졸참나무": "Quercus serrata",
+    "아까시나무": "Robinia pseudoacacia",
+    "붉가시나무": "Quercus acuta",
+    "신갈나무": "Quercus mongolica",
+    "사철나무": "Euonymus japonicus",
+    "산철쭉": "Rhododendron yedoense f. poukhanense",
+    "조팝나무": "Spiraea prunifolia",
+    "화살나무": "Euonymus alatus",
+    "회양목": "Buxus sinica var. insularis",
+    "개나리": "Forsythia koreana",
+    "남천": "Nandina domestica",
+    "덜꿩나무": "Viburnum erosum",
+    "말발도리": "Deutzia parviflora",
+    "병꽃나무": "Weigela subsessilis",
+    "싸리": "Lespedeza bicolor",
+    "수수꽃다리": "Syringa oblata var. dilatata",
+    "좀작살나무": "Callicarpa dichotoma",
+    "쥐똥나무": "Ligustrum obtusifolium",
+    "흰말채나무": "Cornus alba",
+    "후박나무": "Machilus thunbergii",
+    "백합나무": "Liriodendron tulipifera",
+    "종가시나무": "Quercus glauca",
+    "리기다소나무": "Pinus rigida",
+    "잣나무": "Pinus koraiensis",
+    "일본잎갈나무": "Larix kaempferi",
+    "삼나무": "Cryptomeria japonica",
+    "상수리나무": "Quercus acutissima",
+    "굴참나무": "Quercus variabilis",
+    "자작나무": "Betula pendula",
+    "서어나무": "Carpinus laxiflora",
+    "밤나무": "Castanea crenata",
+    "현사시나무": "Populus tomentiglandulosa",
+    "구실잣밤나무": "Castanopsis sieboldii",
+    "동백나무": "Camellia japonica",
+    "메타세쿼이아": "Metasequoia glyptostroboides",
+    "양버즘나무": "Platanus occidentalis",
+    "단풍나무": "Acer palmatum",
+    "선버들": "Salix subfragilis",
+    "왕버들": "Salix chaenomeloides",
+    "사할린전나무": "Abies sachalinensis",
+    "아프리카향나무": "Juniperus procera",
+    "까치박달": "Carpinus cordata",
+    "미국너도밤나무": "Fagus grandifolia",
+    "인도월계수": "Cinnamomum tamala",
+    "차나무": "Camellia sinensis",
+    "사스레피나무": "Eurya japonica",
+    "마가목": "Sorbus aucuparia",
+    "국수나무": "Stephanandra incisa",
+    "산동백나무": "Mallotus paniculatus",
+    "박달목서": "Daphniphyllum himalense",
+    "피나무": "Tilia amurensis",
+    "산수유": "Cornus officinalis",
+    "노린재나무": "Symplocos paniculata",
+    "구주소나무": "Pinus sylvestris",
+    "독일가문비나무": "Picea abies",
+    "가문비나무": "Picea mariana",
+    "포플러": "Populus tremula × P. tremuloides",
+    "비술나무": "Ulmus pumila",
+    "모밀잣밤나무": "Castanopsis indica",
+    "멕시코수양소나무": "Pinus patula",
+    "굴피나무": "Platycarya strobilacea",
+    "서양개암나무": "Corylus avellana",
+    "개옻나무": "Toxicodendron trichocarpum",
+    "모감주나무": "Koelreuteria paniculata"
+  },
   "TREE_BASE": {
     "소나무": {
       "default": [
@@ -320,8 +395,8 @@
     "백합나무(전체)": {
       "equation": "Y=0.063*X^2.578",
       "range": [
-        null,
-        null
+        6,
+        39
       ],
       "var1": "DBH (cm)"
     },
@@ -445,11 +520,11 @@
       ],
       "var1": "DBH (cm)"
     },
-    "단풍나무(전체)": {
+    "단풍나무(전체, 경남)": {
       "equation": "ln(Y)=2.3864+2.0950*ln(X)",
       "range": [
-        13,
-        26
+        6,
+        19
       ],
       "var1": "DBH (cm)"
     },
@@ -518,14 +593,20 @@
       "var1": "RCD (cm)"
     },
     "신갈나무(전체)": {
-      "equation": "Y=exp(0.992*ln(X)+1.469)+exp(0.808*ln(X)+1.527)",
+      "equation": "Y=exp(0.992*ln(X**2*H)+1.469)+exp(0.808*ln(X**2*H)+1.527)",
       "range": [
         11,
         22
       ],
-      "var1": "DBH (cm)"
+      "var1": "DBH (cm)",
+      "var2": {
+        "label": "수고 H (m)",
+        "min": 0,
+        "max": 60,
+        "default": 10
+      }
     },
-    "잣나무(지상부, 밀도)": {
+    "잣나무(지상부, 밀도, 경기도)": {
       "equation": "ln(Y)=0.903*ln(H)+2.0973*ln(X)-3.323",
       "range": [
         15,
@@ -625,19 +706,11 @@
       ],
       "var1": "DBH (cm)"
     },
-    "팥배나무(지상부)": {
-      "equation": "Y=0.168*X^2.47",
-      "range": [
-        null,
-        null
-      ],
-      "var1": "DBH (cm)"
-    },
     "마가목(지상부)": {
       "equation": "Y=0.164*X^2.041",
       "range": [
-        0,
-        50
+        null,
+        null
       ],
       "var1": "DBH (cm)"
     },
@@ -730,12 +803,18 @@
       "var1": "DBH (cm)"
     },
     "모밀잣밤나무(전체)": {
-      "equation": "Y=52.28*X^0.89",
+      "equation": "Y=52.28*(X**2*H)**0.89",
       "range": [
         0.8,
         2.7
       ],
-      "var1": "RCD (cm)"
+      "var1": "RCD (cm)",
+      "var2": {
+        "label": "수고 H (m)",
+        "min": 0,
+        "max": 60,
+        "default": 10
+      }
     },
     "멕시코수양소나무(전체)": {
       "equation": "Y=exp(-4.7483+1.7395*ln(X*H))",
