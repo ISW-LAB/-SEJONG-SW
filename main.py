@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT
 # -*- coding: utf-8 -*-
 """
 통합 실행 진입점.

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT
 # -*- coding: utf-8 -*-
 """
 탄소량 계산 핵심 로직.

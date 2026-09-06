@@ -1,3 +1,4 @@
+REM SPDX-License-Identifier: MIT
 @echo off
 REM ============================================================
 REM  수종데이터업데이터.exe 빌드 (자체 완결형)

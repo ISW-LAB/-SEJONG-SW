@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT
 # -*- coding: utf-8 -*-
 """
 애플리케이션 전역 폰트 설정 (화면 크기 반응형).

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT
 """선택된 3D 식생 개체의 현재 연도 표시 정보를 구성한다."""
 from __future__ import annotations
 

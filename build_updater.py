@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT
 # -*- coding: utf-8 -*-
 """
 updater_app.py → 수종데이터업데이터.exe 빌드 스크립트 (자체 완결형).

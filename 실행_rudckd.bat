@@ -1,3 +1,4 @@
+REM SPDX-License-Identifier: MIT
 @echo off
 REM ============================================================
 REM  FOCA-SW 실행 (conda)

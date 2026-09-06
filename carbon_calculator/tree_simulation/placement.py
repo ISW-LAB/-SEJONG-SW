@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT
 """지역 내부의 재현 가능한 deterministic jittered-grid 배치."""
 from __future__ import annotations
 

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT
 """기존 직경 성장자료를 렌더 상태로 변환하는 함수.
 
 탄소량은 이 모듈에서 계산하지 않는다. 수고와 수관 fallback은 오직 geometry용이다.

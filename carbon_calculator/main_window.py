@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT
 # -*- coding: utf-8 -*-
 """
 FOCA-SW - PyQt5 메인 윈도우.
@@ -496,7 +497,7 @@ class MainWindow(QMainWindow):
     def __init__(self, environment: str = DEFAULT_ENVIRONMENT,
                  region_name: str = "", area_w: int = 0, area_h: int = 0):
         super().__init__()
-        self.setWindowTitle(tr("FOCA-SW (Ver. 4.4 - Python)"))
+        self.setWindowTitle(tr("FOCA-SW (Ver. 4.4.1 - Python)"))
         # 창 크기는 combined_window(통합 실행 진입점 main.py) 에서 설정.
         # centralWidget 만 사용되므로 이 창 자체의 크기는 영향 없음.
 
@@ -505,7 +506,7 @@ class MainWindow(QMainWindow):
         self.area_w = area_w
         self.area_h = area_h
 
-        # 복원 환경(유형)에 따라 교목 계수/성장차가 매핑된다 (관목은 현재 환경 무관).
+        # 대상지 유형은 보고서 메타데이터이며 수종별 기본 계수는 모든 대상지에서 동일하다.
         self.environment = environment
         self._tree_species = tree_species_for_env(environment)
         self._shrub_species = shrub_species_for_env(environment)

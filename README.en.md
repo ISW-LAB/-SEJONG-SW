@@ -6,13 +6,17 @@ executables: **FOCA-SW** (the core software) and the
 **species data updater**, which applies a new species dataset and rebuilds the
 core executable.
 
-The version 4.4 scientific library separates its user-facing and compatibility
+The version 4.4.1 scientific library separates its user-facing and compatibility
 coverage. The primary site-assessment workflow exposes **22 native records**
 (seven tree and 15 shrub records). A further **55 compatibility records**
 (30 domestic and 25 international records) are maintained in the updater and
 equation evaluator but are not selectable in the primary workflow. Together,
 the 77 named records implement 79 executable equations. This distinction is
 important when interpreting the software's current operational coverage.
+
+The site category stored with each project is descriptive metadata. It does
+not select or modify the allometric coefficients in this release; every site
+uses the species-level default record from the validated library.
 
 The interface, figures and Excel output are available in **Korean and English**.
 In English mode every species is labelled with its scientific name
@@ -144,7 +148,7 @@ updater_빌드.bat
 3. Compile with either
    - Inno Setup Compiler: open `installer.iss`, then `Build > Compile`, or
    - the command line: `"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss`
-4. Output: `installer_output/FOCA-SW_Setup_4.4.exe`
+4. Output: `installer_output/FOCA-SW_Setup_4.4.1.exe`
 
 ---
 
@@ -165,6 +169,26 @@ English mode can label it.
 
 When adding a species, add its scientific name to `SPECIES_EN` as well; otherwise
 English mode falls back to the Korean name rather than inventing a binomial.
+
+---
+
+## 6. Verify the scientific core
+
+Run the tracked regression suite before building or modifying the equation
+library:
+
+```powershell
+python -m unittest discover -s tests -v
+```
+
+The suite checks release-library counts, JSON parsing and data licensing,
+site-category invariance, the allometric calculation, exact stem-count
+scaling, inclusive diameter boundaries, deterministic year-zero scenarios,
+shrub unit conversion, every compatibility equation, and rejection of unsafe
+equation syntax. The same suite runs on Windows with Python 3.10 and 3.11
+through the repository's continuous-integration workflow. The evaluated
+Windows build environment and local artifact checksums are recorded in
+[BUILD_VERIFICATION.md](BUILD_VERIFICATION.md).
 
 ---
 

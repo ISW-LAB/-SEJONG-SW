@@ -1,6 +1,7 @@
+# SPDX-License-Identifier: MIT
 # -*- coding: utf-8 -*-
 """
-통합 메인 윈도우 — **지역(권역)별 동적 탭** 관리 (Ver. 4.4).
+통합 메인 윈도우 — **지역(권역)별 동적 탭** 관리 (Ver. 4.4.1).
 
 - 상단 탭은 지역별로 동적으로 추가/삭제된다. 좌상단 [+ 지역 추가] 로 팝업을 띄워
   지역명·면적(가로×세로 m)·환경(산불피해지 자연복원/인공복원/채석장 인공복원)을 입력하면
@@ -36,7 +37,7 @@ from .plotting import MatplotlibCanvas
 from .ui_scale import apply_dialog_size, apply_window_size, pt, px
 
 
-# 환경(복원 유형) 선택지 — data.py 를 단일 출처로 사용 (교목 계수/성장차 매핑 키와 일치).
+# 대상지 유형 선택지 — data.py 를 단일 출처로 사용하며 보고서 메타데이터로 보존한다.
 ENVIRONMENTS = RESTORATION_ENVIRONMENTS
 
 
@@ -245,7 +246,7 @@ class CombinedMainWindow(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle(tr("FOCA-SW - 산림복원지 탄소추정 및 시나리오 분석 소프트웨어 (Ver. 4.4)"))
+        self.setWindowTitle(tr("FOCA-SW - 산림복원지 탄소추정 및 시나리오 분석 소프트웨어 (Ver. 4.4.1)"))
         apply_window_size(self, wfrac=0.84, hfrac=0.88, min_w=1100, min_h=680)
 
         # 지역 목록: 각 항목 {name, w, h, env, window(Carbon1Window), container}
@@ -310,7 +311,7 @@ class CombinedMainWindow(QMainWindow):
     def _create_region(self, name: str, w: int, h: int, env: str) -> int:
         """지역 탭을 생성하고 추가한다. 추가된 탭 인덱스를 반환."""
         self._set_placeholder(False)
-        # 지역의 환경(복원 유형)·이름·면적을 Carbon1 에 전달 → 계수 매핑 + Excel 자동 네이밍/요약.
+        # 지역의 대상지 유형·이름·면적을 Carbon1 에 전달 → Excel 자동 네이밍/요약.
         window = Carbon1Window(environment=env, region_name=name, area_w=w, area_h=h)
         container = self._wrap_region(window, name, w, h, env)
         idx = self._tabs.addTab(container, name)
@@ -601,7 +602,7 @@ class CombinedMainWindow(QMainWindow):
         bar = QStatusBar()
         self._status_label = QLabel(tr("‘+ 지역 추가’로 지역을 추가하세요."))
         bar.addWidget(self._status_label, 1)
-        version_label = QLabel(tr("FOCA-SW v4.4"))
+        version_label = QLabel(tr("FOCA-SW v4.4.1"))
         version_label.setStyleSheet("color: #777;")
         bar.addPermanentWidget(version_label)
         self.setStatusBar(bar)
@@ -610,7 +611,7 @@ class CombinedMainWindow(QMainWindow):
         QMessageBox.about(
             self,
             tr("FOCA-SW"),
-            tr("<b>FOCA-SW (통합 Ver. 4.4)</b><br><br>")
+            tr("<b>FOCA-SW (통합 Ver. 4.4.1)</b><br><br>")
             + tr("지역(권역)별로 탭을 동적으로 추가해 각 지역의 "
                  "<b>탄소저장량 추정 + 수종별 기여도</b>를 독립적으로 다룹니다.<br>")
             + tr("&nbsp;&nbsp;· [+ 지역 추가] — 지역명/면적/환경 입력 → 지역 탭 생성<br>")

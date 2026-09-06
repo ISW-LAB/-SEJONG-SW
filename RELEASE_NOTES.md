@@ -1,8 +1,9 @@
-# FOCA-SW v4.4
+# FOCA-SW v4.4.1
 
-FOCA-SW v4.4 is the source release evaluated in the accompanying SoftwareX
-manuscript. It standardises the FOCA-SW product name across the application,
-build system, updater, installer, and bilingual documentation.
+FOCA-SW v4.4.1 is the source release evaluated in the accompanying SoftwareX
+manuscript. It retains the v4.4 interface and scientific coverage while making
+the executable behaviour, documentation, and verification assets consistent
+with the submitted article.
 
 ## Evaluated scope
 
@@ -17,11 +18,23 @@ The 22 native records are the operational coverage evaluated in the article.
 The 55 compatibility records remain available to the updater and equation
 evaluator but are not selectable in the primary site-assessment interface.
 
+## Verification and hardening
+
+- Site category is retained as descriptive project metadata and no longer
+  selects or modifies allometric coefficients.
+- Equation strings are evaluated through an abstract-syntax-tree allowlist;
+  Python `eval` is not used.
+- A tracked regression suite verifies the scientific core, data-library
+  counts, every compatibility equation, boundary guards, deterministic
+  scenarios, and rejection of unsafe expression syntax.
+- A Windows continuous-integration workflow runs the suite with Python 3.10
+  and 3.11.
+
 ## Licensing
 
 The code, build scripts, documentation, and repository figures use the MIT
 License. The scientific equation library in `species_data.json` uses KOGL Type
-1 (Attribution), as described in `DATA_LICENSE.md`.
+1 (Attribution), as described in `DATA_LICENSE.md` and the JSON schema metadata.
 
 ## Reproduction
 

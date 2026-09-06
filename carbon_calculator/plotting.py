@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT
 # -*- coding: utf-8 -*-
 """
 matplotlib 캔버스 래퍼 (PyQt5 임베드).

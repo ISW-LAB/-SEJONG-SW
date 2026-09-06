@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT
 """선택 개체의 현재 연도 특성을 보여주는 작은 상세창."""
 from __future__ import annotations
 

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT
 # -*- coding: utf-8 -*-
 """
 모니터 크기·해상도에 반응하는 UI 스케일링 유틸리티.

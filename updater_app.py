@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT
 # -*- coding: utf-8 -*-
 """
 수종 데이터 업데이터 (자체 완결형).
@@ -43,9 +44,11 @@ from PyQt5.QtWidgets import (
     QVBoxLayout, QWidget,
 )
 
+from carbon_calculator.equation_eval import evaluate as _safe_equation_evaluate
+
 # ── 표시 언어 ────────────────────────────────────────────────────────────
-# 이 앱은 소스 폴더 없이 단독 배포되므로 carbon_calculator 에 의존하지 않고
-# 자체 대응표를 갖는다. 언어 설정은 FOCA-SW와 같은 QSettings 키를 공유해
+# 이 앱은 표시문자열에 자체 대응표를 사용한다. 수식 검증은 FOCA-SW와 같은
+# 허용목록 기반 평가기를 공유한다. 언어 설정은 같은 QSettings 키를 공유해
 # 두 앱의 표시 언어가 함께 움직인다. 기존 설치의 설정 호환성을 위해 키는 유지한다.
 _SETTINGS_ORG = "SejongArboretum"
 _SETTINGS_APP = "CarbonStorageModule"
@@ -150,7 +153,7 @@ _EN: dict[str, str] = {
     "최소직경(cm)": "Min diameter (cm)", "최대직경(cm)": "Max diameter (cm)",
     "최소직경(mm)": "Min diameter (mm)", "최대직경(mm)": "Max diameter (mm)",
     "성장률(~10y)": "Growth rate (~10 y)", "성장률(11~20y)": "Growth rate (11–20 y)",
-    "성장률(21y~)": "Growth rate (21 y~)", "환경별 계수": "Per-environment coefficients",
+    "성장률(21y~)": "Growth rate (21 y~)",
     "상대생장식": "Allometric equation", "범위 최소": "Range min", "범위 최대": "Range max",
     "변수1 라벨": "Variable 1 label", "변수2 라벨": "Variable 2 label",
     "변수2 최소": "Variable 2 min", "변수2 최대": "Variable 2 max", "변수2 기본값": "Variable 2 default",
@@ -160,21 +163,13 @@ _EN: dict[str, str] = {
         "variable-2 label blank for a single-variable equation · equations use X (first variable), "
         "H (second variable), ^, ln and exp",
     "+ 새 수종 추가": "+ Add new species", "선택 삭제": "Delete selected",
-    "환경별 계수 편집...": "Edit per-environment coefficients...",
     "JSON 파일로 저장": "Save to JSON file",
     "— JSON 파일을 선택하면 여기에 표시됩니다": "— select a JSON file to show it here",
     "변경됨 — 아직 파일에 저장되지 않았습니다": "Modified — not yet saved to the file",
     "변경 없음 (파일과 동기화됨)": "No changes (in sync with the file)",
-    "기본값만": "Default only", "{n}개 환경": "{n} environments",
     "새수종": "NewSpecies",
     "삭제할 행을 먼저 선택하세요.": "Select the rows to delete first.",
     "{n}개 수종을 삭제할까요?\n{names}": "Delete {n} species?\n{names}",
-    "환경별 계수 — {species}": "Per-environment coefficients — {species}",
-    "체크한 환경만 고유 계수를 갖습니다. 체크하지 않은 환경은 기본값(표의 값)을 사용합니다.":
-        "Only checked environments carry their own coefficients. Unchecked environments use "
-        "the default values from the table.",
-    "사용": "Use",
-    "교목 표에서 수종 행을 먼저 선택하세요.": "Select a species row in the Trees table first.",
     "입력 오류": "Input error", "검증 실패": "Validation failed", "미저장 변경": "Unsaved changes",
     "교목": "Tree", "관목": "Shrub", "국내": "Domestic", "국외": "International",
     "식은 'Y=' 또는 'ln(Y)=' 로 시작해야 합니다": "The equation must start with 'Y=' or 'ln(Y)='",
@@ -587,7 +582,7 @@ class FilePickRow(QWidget):
 # species_data.json 의 4개 섹션(교목·관목·국내·국외)을 표로 보여주고 셀 단위로
 # 추가·수정·삭제한 뒤 같은 파일에 저장한다. 저장 시 형식은 data.py / data2.py 의
 # 로더가 읽는 그대로 유지한다:
-#   TREE_BASE      : {"default": [a,b,cf,dmin,dmax,g10,g20,g21], "by_env": {환경: [...]}}
+#   TREE_BASE      : {"default": [a,b,cf,dmin,dmax,g10,g20,g21]}
 #   SHRUB_SPECIES  : [a,b,cf,dmin,dmax,g10,g20,g21]
 #   DOMESTIC/FOREIGN: {"equation", "range": [min,max]|[null,null], "var1", "var2"?}
 # 학명(SPECIES_EN)은 꼬리표를 뗀 기본 수종명 기준으로 함께 갱신한다.
@@ -601,7 +596,6 @@ _TREE_COLS = [
     ("수종명", "name"), ("학명", "sci"), ("a", "a"), ("b", "b"), ("CF", "cf"),
     ("최소직경(cm)", "dmin"), ("최대직경(cm)", "dmax"),
     ("성장률(~10y)", "g10"), ("성장률(11~20y)", "g20"), ("성장률(21y~)", "g21"),
-    ("환경별 계수", "env"),
 ]
 _SHRUB_COLS = [
     ("수종명", "name"), ("학명", "sci"), ("a", "a"), ("b", "b"), ("CF", "cf"),
@@ -614,28 +608,7 @@ _EQ_COLS = [
     ("변수2 라벨", "v2"), ("변수2 최소", "v2min"), ("변수2 최대", "v2max"),
     ("변수2 기본값", "v2def"),
 ]
-_ROLE_BY_ENV = Qt.UserRole + 1     # 교목 수종명 셀에 by_env dict 를 보관
-_ROLE_TRUE_NAME = Qt.UserRole + 2  # 수종명 셀이 학명으로 표시(영문 모드·읽기전용)될 때 실제 저장 키(국문)
-
-
-class _PyBox:
-    """Qt 아이템 데이터에 dict 를 그대로 넣으면 PyQt 가 QVariantMap(키 정렬) 으로
-    변환해 환경 순서가 바뀐다. Python 객체로 감싸 변환을 막는다."""
-    __slots__ = ("v",)
-
-    def __init__(self, v):
-        self.v = v
-
-
-def _get_by_env(item) -> dict:
-    box = item.data(_ROLE_BY_ENV) if item is not None else None
-    if isinstance(box, _PyBox):
-        return dict(box.v)
-    return dict(box) if isinstance(box, dict) else {}
-
-
-def _set_by_env(item, by_env: dict) -> None:
-    item.setData(_ROLE_BY_ENV, _PyBox(dict(by_env)))
+_ROLE_TRUE_NAME = Qt.UserRole + 1  # 수종명 셀이 학명으로 표시(영문 모드·읽기전용)될 때 실제 저장 키(국문)
 
 
 def _set_true_name(item, name: str) -> None:
@@ -655,27 +628,9 @@ def _get_true_name(item) -> str:
             return stored
     return item.text()
 
-# 식 검증용 최소 평가기 — carbon_calculator.equation_eval 과 같은 규칙
-# (^ → **, ln/log/exp/sqrt 허용, "ln(Y)=" 이면 exp 적용). 업데이터는 단독 배포되므로
-# 본 프로그램 패키지를 import 하지 않고 여기서 자체 검사한다.
-_EVAL_FUNCS = {
-    "ln": math.log, "log": math.log, "exp": math.exp,
-    "sqrt": math.sqrt, "pow": pow, "abs": abs,
-}
-
-
 def _eval_equation(equation: str, x: float, h: float | None = None) -> float:
-    eqn = equation.strip().replace("^", "**")
-    env: dict = {"__builtins__": {}}
-    env.update(_EVAL_FUNCS)
-    env["X"] = float(x)
-    if h is not None:
-        env["H"] = float(h)
-    if "ln(Y)=" in eqn:
-        return math.exp(eval(eqn.split("ln(Y)=", 1)[1], env))
-    if "Y=" in eqn:
-        return float(eval(eqn.split("Y=", 1)[1], env))
-    raise ValueError(tr("식은 'Y=' 또는 'ln(Y)=' 로 시작해야 합니다"))
+    """본 프로그램과 동일한 허용목록 기반 평가기로 식을 검증한다."""
+    return _safe_equation_evaluate(equation, x, h)
 
 
 def _fmt_num(v) -> str:
@@ -737,70 +692,6 @@ def _mk_item(text: str, editable: bool = True) -> QTableWidgetItem:
     return it
 
 
-class TreeEnvDialog(QDialog):
-    """교목 한 종의 복원 환경별 계수(by_env) 편집."""
-
-    def __init__(self, species: str, environments: list[str], default_arr: list,
-                 by_env: dict, env_en: dict | None = None, sci_name: str = "", parent=None):
-        super().__init__(parent)
-        title_name = sci_name if (_LANG == "en" and sci_name) else species
-        self.setWindowTitle(tr("환경별 계수 — {species}").format(species=title_name))
-        self._envs = list(environments)
-        env_en = env_en or {}
-        v = QVBoxLayout(self)
-        note = QLabel(tr("체크한 환경만 고유 계수를 갖습니다. 체크하지 않은 환경은 기본값(표의 값)을 사용합니다."))
-        note.setWordWrap(True)
-        note.setStyleSheet(_note_css())
-        v.addWidget(note)
-
-        headers = [tr("사용")] + [tr(h) for h, _k in _TREE_COLS[2:10]]
-        self.table = QTableWidget(len(self._envs), len(headers))
-        self.table.setHorizontalHeaderLabels(headers)
-        # 세로 헤더는 표시용 — 저장 키는 self._envs(원본 국문)를 그대로 쓴다.
-        row_labels = [env_en.get(e, e) if _LANG == "en" else e for e in self._envs]
-        self.table.setVerticalHeaderLabels(row_labels)
-        self.table.verticalHeader().setDefaultSectionSize(_px(26))
-        self.table.horizontalHeader().setStretchLastSection(True)
-        for r, env in enumerate(self._envs):
-            chk = QTableWidgetItem()
-            chk.setFlags(Qt.ItemIsUserCheckable | Qt.ItemIsEnabled)
-            chk.setCheckState(Qt.Checked if env in by_env else Qt.Unchecked)
-            self.table.setItem(r, 0, chk)
-            arr = by_env.get(env, default_arr)
-            for c in range(8):
-                self.table.setItem(r, c + 1, _mk_item(_fmt_num(arr[c] if c < len(arr) else None)))
-        self.table.resizeColumnsToContents()
-        # 환경 수만큼 행이 스크롤 없이 다 보이도록, 화면을 넘지 않는 범위에서 크기를 잡는다
-        _fit_dialog(self, 960, 150 + 30 * max(1, len(self._envs)))
-        v.addWidget(self.table)
-
-        btns = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-        btns.accepted.connect(self._accept)
-        btns.rejected.connect(self.reject)
-        v.addWidget(btns)
-        self._result: dict = {}
-
-    def _accept(self):
-        result = {}
-        for r, env in enumerate(self._envs):
-            if self.table.item(r, 0).checkState() != Qt.Checked:
-                continue
-            arr = []
-            for c in range(8):
-                what = "%s / %s" % (env, tr(_TREE_COLS[c + 2][0]))
-                try:
-                    arr.append(_num_out(_parse_num(self.table.item(r, c + 1).text(), what)))
-                except ValueError as e:
-                    QMessageBox.warning(self, tr("입력 오류"), str(e))
-                    return
-            result[env] = arr
-        self._result = result
-        self.accept()
-
-    def result_by_env(self) -> dict:
-        return self._result
-
-
 class SpeciesEditor(QGroupBox):
     """species_data.json 4개 섹션의 표 편집기 (추가·수정·삭제·저장)."""
 
@@ -837,7 +728,6 @@ class SpeciesEditor(QGroupBox):
             t.setMinimumHeight(_px(170))
             t.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
             t.itemChanged.connect(self._on_item_changed)
-            t.cellDoubleClicked.connect(self._on_cell_double_clicked)
             self.tables[section] = t
             self.tabs.addTab(t, tr(title))
         self.tabs.currentChanged.connect(self._sync_buttons)
@@ -852,13 +742,10 @@ class SpeciesEditor(QGroupBox):
         row = QHBoxLayout()
         self.add_btn = QPushButton(tr("+ 새 수종 추가"))
         self.del_btn = QPushButton(tr("선택 삭제"))
-        self.env_btn = QPushButton(tr("환경별 계수 편집..."))
         self.add_btn.clicked.connect(self.add_row)
         self.del_btn.clicked.connect(self.delete_selected)
-        self.env_btn.clicked.connect(self.edit_env)
         row.addWidget(self.add_btn)
         row.addWidget(self.del_btn)
-        row.addWidget(self.env_btn)
         row.addStretch(1)
         v.addLayout(row)
 
@@ -875,11 +762,8 @@ class SpeciesEditor(QGroupBox):
 
     def _sync_buttons(self, *_):
         loaded = self._data is not None
-        is_tree = self.tabs.currentWidget() is self.tables.get(_SECTION_TREE)
         self.add_btn.setEnabled(loaded)
         self.del_btn.setEnabled(loaded)
-        self.env_btn.setEnabled(loaded and is_tree)
-        self.env_btn.setVisible(is_tree)
 
     # ── 상태 ──────────────────────────────────────────────────────
     def is_dirty(self) -> bool:
@@ -938,13 +822,13 @@ class SpeciesEditor(QGroupBox):
         t.setRowCount(0)
         for name, entry in section.items():
             if isinstance(entry, dict) and "default" in entry:
-                arr, by_env = entry["default"], dict(entry.get("by_env") or {})
+                arr = entry["default"]
             else:
-                arr, by_env = entry, {}
-            self._append_coef_row(t, name, sci.get(_base_name(name), ""), arr, by_env, tree)
+                arr = entry
+            self._append_coef_row(t, name, sci.get(_base_name(name), ""), arr, tree)
 
     def _append_coef_row(self, t: QTableWidget, name: str, sci_name: str, arr: list,
-                         by_env: dict, tree: bool):
+                         tree: bool):
         r = t.rowCount()
         t.insertRow(r)
         # 영문 모드 + 학명이 있으면 0열은 학명을 보여주는 읽기전용 표시로 바뀐다.
@@ -952,21 +836,10 @@ class SpeciesEditor(QGroupBox):
         swap = (_LANG == "en" and bool(sci_name))
         name_it = _mk_item(sci_name if swap else name, editable=not swap)
         _set_true_name(name_it, name)
-        if tree:
-            _set_by_env(name_it, dict(by_env))
         t.setItem(r, 0, name_it)
         t.setItem(r, 1, _mk_item(sci_name))
         for c in range(8):
             t.setItem(r, c + 2, _mk_item(_fmt_num(arr[c] if c < len(arr) else None)))
-        if tree:
-            t.setItem(r, 10, _mk_item(self._env_summary(by_env), editable=False))
-
-    def _env_summary(self, by_env: dict) -> str:
-        if not by_env:
-            return tr("기본값만")
-        env_en = (self._data or {}).get("ENVIRONMENTS_EN") or {}
-        shown = [env_en.get(e, e) if _LANG == "en" else e for e in by_env.keys()]
-        return tr("{n}개 환경").format(n=len(by_env)) + " (" + ", ".join(shown) + ")"
 
     def _fill_eq_table(self, t: QTableWidget, section: dict, sci: dict):
         t.setRowCount(0)
@@ -1004,9 +877,9 @@ class SpeciesEditor(QGroupBox):
         self._loading = True
         try:
             if section == _SECTION_TREE:
-                self._append_coef_row(t, tr("새수종"), "", [0.1, 2.5, 0.5, 1, 30, 0.1, 0.1, 0.1], {}, True)
+                self._append_coef_row(t, tr("새수종"), "", [0.1, 2.5, 0.5, 1, 30, 0.1, 0.1, 0.1], True)
             elif section == _SECTION_SHRUB:
-                self._append_coef_row(t, tr("새수종"), "", [0.0002, 2.5, 0.5, 5, 40, 0.2, 0.2, 0.2], {}, False)
+                self._append_coef_row(t, tr("새수종"), "", [0.0002, 2.5, 0.5, 5, 40, 0.2, 0.2, 0.2], False)
             else:
                 self._append_eq_row(t, [tr("새수종") + "(전체)", "", "Y=0.1*X^2.5",
                                         "", "", "DBH (cm)", "", "", "", ""])
@@ -1033,40 +906,6 @@ class SpeciesEditor(QGroupBox):
         for r in rows:
             t.removeRow(r)
         self._set_dirty(True)
-
-    def _on_cell_double_clicked(self, row: int, col: int):
-        if self._current_section() == _SECTION_TREE and col == 10:
-            self.edit_env()
-
-    def edit_env(self):
-        t = self.tables[_SECTION_TREE]
-        r = t.currentRow()
-        if r < 0:
-            QMessageBox.information(self, tr("환경별 계수"), tr("교목 표에서 수종 행을 먼저 선택하세요."))
-            return
-        name_it = t.item(r, 0)
-        true_name = _get_true_name(name_it)
-        try:
-            default_arr = [_num_out(_parse_num(t.item(r, c + 2).text(), tr(_TREE_COLS[c + 2][0])))
-                           for c in range(8)]
-        except ValueError as e:
-            QMessageBox.warning(self, tr("입력 오류"), str(e))
-            return
-        envs = list((self._data or {}).get("ENVIRONMENTS") or [])
-        env_en = (self._data or {}).get("ENVIRONMENTS_EN") or {}
-        sci = (self._data or {}).get("SPECIES_EN") or {}
-        sci_name = sci.get(_base_name(true_name), "")
-        dlg = TreeEnvDialog(true_name, envs, default_arr, _get_by_env(name_it),
-                             env_en, sci_name, self)
-        if dlg.exec_() == QDialog.Accepted:
-            by_env = dlg.result_by_env()
-            _set_by_env(name_it, by_env)
-            self._loading = True
-            try:
-                t.item(r, 10).setText(self._env_summary(by_env))
-            finally:
-                self._loading = False
-            self._set_dirty(True)
 
     # ── 검증 + JSON 조립 ──────────────────────────────────────────
     def validate_and_build(self) -> tuple[list[str], dict | None]:
@@ -1139,11 +978,7 @@ class SpeciesEditor(QGroupBox):
                 continue
             sci_cb(name, t.item(r, 1).text() if t.item(r, 1) else "")
             if tree:
-                by_env = _get_by_env(t.item(r, 0))
-                entry = {"default": arr}
-                if by_env:
-                    entry["by_env"] = {env: list(v) for env, v in by_env.items()}
-                result[name] = entry
+                result[name] = {"default": arr}
             else:
                 result[name] = arr
         return result
@@ -1218,8 +1053,7 @@ class SpeciesEditor(QGroupBox):
                 cells = [(t.item(r, c).text() if t.item(r, c) else "") for c in range(t.columnCount())]
                 if t.item(r, 0):
                     cells[0] = _get_true_name(t.item(r, 0))   # 0열은 항상 저장 키(국문)로 스냅샷
-                by_env = _get_by_env(t.item(r, 0)) if (sec == _SECTION_TREE and t.item(r, 0)) else None
-                sec_rows.append((cells, by_env))
+                sec_rows.append(cells)
             rows[sec] = sec_rows
         return {"data": self._data, "dirty": self._dirty, "rows": rows,
                 "tab": self.tabs.currentIndex()}
@@ -1230,7 +1064,7 @@ class SpeciesEditor(QGroupBox):
             self._data = snap.get("data")
             for sec, t in self.tables.items():
                 t.setRowCount(0)
-                for cells, by_env in snap["rows"].get(sec, []):
+                for cells in snap["rows"].get(sec, []):
                     r = t.rowCount()
                     t.insertRow(r)
                     true_name = cells[0] if cells else ""
@@ -1241,12 +1075,8 @@ class SpeciesEditor(QGroupBox):
                             it = _mk_item(sci_name if swap else true_name, editable=not swap)
                             _set_true_name(it, true_name)
                         else:
-                            editable = not (sec == _SECTION_TREE and c == 10)
-                            it = _mk_item(text, editable)
+                            it = _mk_item(text)
                         t.setItem(r, c, it)
-                    if sec == _SECTION_TREE and by_env is not None:
-                        _set_by_env(t.item(r, 0), by_env)
-                        t.item(r, 10).setText(self._env_summary(by_env))
                 _tidy_columns(t)
             self.tabs.setCurrentIndex(snap.get("tab", 0))
         finally:

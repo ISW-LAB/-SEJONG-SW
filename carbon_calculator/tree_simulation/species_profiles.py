@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT
 """수종별 렌더 프로파일.
 
 shape와 비율은 3D 표현용 설정이며 과학적 생장 계수가 아니다.

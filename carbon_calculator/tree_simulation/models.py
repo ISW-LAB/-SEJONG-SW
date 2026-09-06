@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT
 """Qt/VTK에 의존하지 않는 3D 시각화 데이터 객체."""
 from __future__ import annotations
 

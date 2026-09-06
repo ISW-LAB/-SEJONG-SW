@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT
 """Carbon1 입력 DTO를 불변 지역 시각화 snapshot으로 변환한다."""
 from __future__ import annotations
 

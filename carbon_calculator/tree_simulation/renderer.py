@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT
 """PyVista/VTK 기반 지역 식생 glyph 렌더러."""
 from __future__ import annotations
 

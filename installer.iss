@@ -1,3 +1,4 @@
+; SPDX-License-Identifier: MIT
 ; ============================================================================
 ;  FOCA-SW - Inno Setup 설치 마법사 스크립트
 ; ----------------------------------------------------------------------------
@@ -16,12 +17,12 @@
 ;    B) 명령줄:
 ;         "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
 ;
-;    → installer_output\FOCA-SW_Setup_4.4.exe 생성
+;    → installer_output\FOCA-SW_Setup_4.4.1.exe 생성
 ;       이 Setup.exe 하나만 다른 컴퓨터로 옮겨 실행하면 설치된다.
 ; ============================================================================
 
 #define MyAppName "FOCA-SW"
-#define MyAppVersion "4.4"
+#define MyAppVersion "4.4.1"
 #define MyAppPublisher "세종수목원"
 #define MyAppExeName "FOCA-SW.exe"
 ; --onedir 빌드 산출물 폴더 (installer.iss 기준 상대경로)

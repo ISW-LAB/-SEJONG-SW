@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT
 """Carbon1 오른쪽 결과 탭에 삽입되는 지역별 3D 시각화 QWidget."""
 from __future__ import annotations
 

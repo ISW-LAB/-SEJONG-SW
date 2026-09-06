@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT
 # -*- coding: utf-8 -*-
 """
 Carbon1 (자생복원종 교목/관목) 결과의 Excel(.xlsx) 내보내기.

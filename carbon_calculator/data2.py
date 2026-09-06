@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT
 # -*- coding: utf-8 -*-
 """
 Carbon2 (국내·국외 통합 모듈) 수종 데이터.

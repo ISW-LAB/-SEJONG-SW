@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT
 # -*- coding: utf-8 -*-
 """
 main.py → 단일 실행파일(.exe) 빌드 스크립트.

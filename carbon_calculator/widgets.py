@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT
 # -*- coding: utf-8 -*-
 """
 MATLAB uigauge('linear') 와 유사한 수평 게이지 위젯.
