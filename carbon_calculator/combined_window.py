@@ -1,10 +1,10 @@
 # SPDX-License-Identifier: MIT
 # -*- coding: utf-8 -*-
 """
-통합 메인 윈도우 — **지역(권역)별 동적 탭** 관리 (Ver. 4.4.1).
+통합 메인 윈도우 — **지역(권역)별 동적 탭** 관리.
 
 - 상단 탭은 지역별로 동적으로 추가/삭제된다. 좌상단 [+ 지역 추가] 로 팝업을 띄워
-  지역명·면적(가로×세로 m)·환경(산불피해지 자연복원/인공복원/채석장 인공복원)을 입력하면
+  지역명·면적(가로×세로 m)·대상지 유형을 입력하면
   그 지역명을 라벨로 하는 새 탭(자생복원종 탄소저장량 추정 + 기여도 화면)이 생성된다.
 - 우상단 [지역 종합 분석] 으로 모든 지역의 총 탄소저장량을 비교하는 대시보드를 연다.
 - 국내·국외 통합 기여도(Carbon2) 모듈은 화면에 노출하지 않되 코드/인스턴스/수식은 보존한다.
@@ -35,6 +35,7 @@ from .main_window import MainWindow as Carbon1Window
 from .main_window2 import Carbon2MainWindow
 from .plotting import MatplotlibCanvas
 from .ui_scale import apply_dialog_size, apply_window_size, pt, px
+from .version import __version__
 
 
 # 대상지 유형 선택지 — data.py 를 단일 출처로 사용하며 보고서 메타데이터로 보존한다.
@@ -44,7 +45,7 @@ ENVIRONMENTS = RESTORATION_ENVIRONMENTS
 # ------------------------------ 지역 추가 다이얼로그 ------------------------------
 
 class AddRegionDialog(QDialog):
-    """지역명 · 면적(가로×세로 m) · 환경 입력 모달."""
+    """지역명 · 면적(가로×세로 m) · 대상지 유형 입력 모달."""
 
     def __init__(self, existing_names: List[str], parent=None):
         super().__init__(parent)
@@ -75,7 +76,7 @@ class AddRegionDialog(QDialog):
 
         self.env_combo = QComboBox()
         self.env_combo.addItems([environment_name(e) for e in ENVIRONMENTS])
-        form.addRow(tr("환경 (복원 유형)"), self.env_combo)
+        form.addRow(tr("대상지 유형 (메타데이터)"), self.env_combo)
 
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         buttons.button(QDialogButtonBox.Ok).setText(tr("추가"))
@@ -105,7 +106,7 @@ class AddRegionDialog(QDialog):
         super().accept()
 
     def values(self):
-        """(지역명, 가로 m, 세로 m, 환경) 반환."""
+        """(지역명, 가로 m, 세로 m, 대상지 유형) 반환."""
         # 콤보는 표시명(영문일 수 있음)이므로 내부 키(한글 원문)로 되돌린다.
         env = ENVIRONMENTS[max(0, self.env_combo.currentIndex())]
         return (self.name_edit.text().strip(),
@@ -207,8 +208,8 @@ class RegionComparisonDialog(QDialog):
 
         # 비교 표
         table = QTableWidget()
-        headers = [tr("지역"), tr("면적(㎡)"), tr("환경"), tr("교목(kgC)"),
-                   tr("관목(kgC)"), tr("총 탄소저장량(kgC)"), tr("단위면적당(kgC/㎡)")]
+        headers = [tr("지역"), tr("면적(㎡)"), tr("교목(kgC)"), tr("관목(kgC)"),
+                   tr("총 탄소저장량(kgC)"), tr("단위면적당(kgC/㎡)")]
         table.setColumnCount(len(headers))
         table.setHorizontalHeaderLabels(headers)
         table.setRowCount(len(data))
@@ -220,7 +221,6 @@ class RegionComparisonDialog(QDialog):
             cells = [
                 d["name"],
                 f"{d['area']:,}",
-                environment_name(d["env"]),
                 f"{d['tree']:,.2f}",
                 f"{d['shrub']:,.2f}",
                 f"{d['total']:,.2f}",
@@ -228,7 +228,7 @@ class RegionComparisonDialog(QDialog):
             ]
             for j, text in enumerate(cells):
                 item = QTableWidgetItem(text)
-                item.setTextAlignment(Qt.AlignVCenter | (Qt.AlignLeft if j in (0, 2) else Qt.AlignCenter))
+                item.setTextAlignment(Qt.AlignVCenter | (Qt.AlignLeft if j == 0 else Qt.AlignCenter))
                 table.setItem(i, j, item)
         v.addWidget(table, 2)
 
@@ -246,7 +246,10 @@ class CombinedMainWindow(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle(tr("FOCA-SW - 산림복원지 탄소추정 및 시나리오 분석 소프트웨어 (Ver. 4.4.1)"))
+        self.setWindowTitle(
+            tr("FOCA-SW - 산림복원지 탄소추정 및 시나리오 분석 소프트웨어 (Ver. {version})")
+            .format(version=__version__)
+        )
         apply_window_size(self, wfrac=0.84, hfrac=0.88, min_w=1100, min_h=680)
 
         # 지역 목록: 각 항목 {name, w, h, env, window(Carbon1Window), container}
@@ -335,7 +338,7 @@ class CombinedMainWindow(QMainWindow):
         v.setSpacing(6)
         banner = QLabel(
             tr("📍 지역: <b>{name}</b>　|　면적: {w} × {h} m  (<b>{area}</b> ㎡)　|　"
-               "환경: <b>{env}</b>")
+               "대상지 유형: <b>{env}</b>")
             .format(name=name, w=w, h=h, area=f"{w * h:,}", env=environment_name(env))
         )
         banner.setStyleSheet(
@@ -602,7 +605,7 @@ class CombinedMainWindow(QMainWindow):
         bar = QStatusBar()
         self._status_label = QLabel(tr("‘+ 지역 추가’로 지역을 추가하세요."))
         bar.addWidget(self._status_label, 1)
-        version_label = QLabel(tr("FOCA-SW v4.4.1"))
+        version_label = QLabel(tr("FOCA-SW v{version}").format(version=__version__))
         version_label.setStyleSheet("color: #777;")
         bar.addPermanentWidget(version_label)
         self.setStatusBar(bar)
@@ -611,10 +614,10 @@ class CombinedMainWindow(QMainWindow):
         QMessageBox.about(
             self,
             tr("FOCA-SW"),
-            tr("<b>FOCA-SW (통합 Ver. 4.4.1)</b><br><br>")
+            tr("<b>FOCA-SW (통합 Ver. {version})</b><br><br>").format(version=__version__)
             + tr("지역(권역)별로 탭을 동적으로 추가해 각 지역의 "
                  "<b>탄소저장량 추정 + 수종별 기여도</b>를 독립적으로 다룹니다.<br>")
-            + tr("&nbsp;&nbsp;· [+ 지역 추가] — 지역명/면적/환경 입력 → 지역 탭 생성<br>")
+            + tr("&nbsp;&nbsp;· [+ 지역 추가] — 지역명/면적/대상지 유형 입력 → 지역 탭 생성<br>")
             + tr("&nbsp;&nbsp;· [지역 종합 분석] — 지역별 총 탄소저장량 비교 대시보드<br><br>")
             + tr("<i>국내·국외 통합 기여도 모듈은 현재 화면에서 비표시(코드·수식은 "
                  "보존).</i><br><br>")

@@ -23,12 +23,21 @@ from carbon_calculator.data import (
 )
 from carbon_calculator.data2 import DOMESTIC_SPECIES, FOREIGN_SPECIES
 from carbon_calculator.equation_eval import EvaluationError, evaluate
+from carbon_calculator.version import __version__
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 
 
 class LibraryTests(unittest.TestCase):
+    def test_release_version_is_synchronised(self) -> None:
+        cff = (REPOSITORY_ROOT / "CITATION.cff").read_text(encoding="utf-8")
+        installer = (REPOSITORY_ROOT / "installer.iss").read_text(encoding="utf-8")
+        release_notes = (REPOSITORY_ROOT / "RELEASE_NOTES.md").read_text(encoding="utf-8")
+        self.assertIn(f"version: {__version__}", cff)
+        self.assertIn(f'#define MyAppVersion "{__version__}"', installer)
+        self.assertIn(f"# FOCA-SW v{__version__}", release_notes)
+
     def test_release_library_counts(self) -> None:
         self.assertEqual(len(TREE_SPECIES), 7)
         self.assertEqual(len(SHRUB_SPECIES), 15)
@@ -123,4 +132,3 @@ class EquationEvaluatorTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

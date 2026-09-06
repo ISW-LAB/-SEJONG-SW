@@ -45,6 +45,7 @@ from PyQt5.QtWidgets import (
 )
 
 from carbon_calculator.equation_eval import evaluate as _safe_equation_evaluate
+from carbon_calculator.version import __version__
 
 # ── 표시 언어 ────────────────────────────────────────────────────────────
 # 이 앱은 표시문자열에 자체 대응표를 사용한다. 수식 검증은 FOCA-SW와 같은
@@ -55,8 +56,8 @@ _SETTINGS_APP = "CarbonStorageModule"
 _SETTINGS_KEY = "language"
 
 _EN: dict[str, str] = {
-    "수종 데이터 업데이터 (자체 완결형) - FOCA-SW":
-        "Species Data Updater (self-contained) - FOCA-SW",
+    "수종 데이터 업데이터 (자체 완결형) - FOCA-SW v{version}":
+        "Species Data Updater (self-contained) - FOCA-SW v{version}",
     "수종 데이터 JSON (통합 species_data.json)":
         "Species data JSON (combined species_data.json)",
     "— 파일을 선택하면 검증됩니다": "— select a file to validate it",
@@ -1091,7 +1092,10 @@ class UpdaterWindow(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle(tr("수종 데이터 업데이터 (자체 완결형) - FOCA-SW"))
+        self.setWindowTitle(
+            tr("수종 데이터 업데이터 (자체 완결형) - FOCA-SW v{version}")
+            .format(version=__version__)
+        )
         self.setMinimumWidth(960)
         self._worker: BuildWorker | None = None
         self._out_user_edited = False   # 출력 폴더를 사용자가 직접 지정했는지
@@ -1125,7 +1129,10 @@ class UpdaterWindow(QMainWindow):
         keep = (self.json_row.edit.text(), self.out_row.edit.text(),
                 self.exe_row.edit.text(), self._out_user_edited)
         snap = self.editor.snapshot()
-        self.setWindowTitle(tr("수종 데이터 업데이터 (자체 완결형) - FOCA-SW"))
+        self.setWindowTitle(
+            tr("수종 데이터 업데이터 (자체 완결형) - FOCA-SW v{version}")
+            .format(version=__version__)
+        )
         old = self.centralWidget()
         self._setup_ui()
         old.deleteLater()

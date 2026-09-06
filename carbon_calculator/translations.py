@@ -8,7 +8,7 @@
 용어는 산림탄소 분야 논문 표기를 따른다.
   탄소저장량 carbon storage · 교목 tree · 관목 shrub · 수종 species
   상대생장식 allometric equation · 탄소전환계수 carbon fraction (CF)
-  지역 site · 복원 환경 restoration environment · 기여도 contribution
+  지역 site · 대상지 유형 site category · 기여도 contribution
 """
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ EN: dict[str, str] = {
     "수종": "Species",
     "구분": "Type",
     "지역": "Site",
-    "환경": "Environment",
+    "대상지 유형": "Site category",
     "직경": "Diameter",
     "교목": "Tree",
     "관목": "Shrub",
@@ -44,13 +44,13 @@ EN: dict[str, str] = {
     "기타": "Other",
 
     # ══════════════════ 메인 창 · 메뉴 ══════════════════
-    "FOCA-SW - 산림복원지 탄소추정 및 시나리오 분석 소프트웨어 (Ver. 4.4.1)":
-        "FOCA-SW - Forest Carbon Estimation and Scenario Analysis Software for Restoration Sites (Ver. 4.4.1)",
+    "FOCA-SW - 산림복원지 탄소추정 및 시나리오 분석 소프트웨어 (Ver. {version})":
+        "FOCA-SW - Forest Carbon Estimation and Scenario Analysis Software for Restoration Sites (Ver. {version})",
     "FOCA-SW": "FOCA-SW",
-    "FOCA-SW (Ver. 4.4.1 - Python)":
-        "FOCA-SW (Ver. 4.4.1 - Python)",
-    "FOCA-SW (Ver. 4.4.1 - 탄소저장량 기여도)":
-        "FOCA-SW (Ver. 4.4.1 - Species Contribution)",
+    "FOCA-SW (Ver. {version} - Python)":
+        "FOCA-SW (Ver. {version} - Python)",
+    "FOCA-SW (Ver. {version} - 탄소저장량 기여도)":
+        "FOCA-SW (Ver. {version} - Species Contribution)",
     "파일(&F)": "&File",
     "통합 Excel 저장(&E)": "&Export combined Excel",
     "종료(&X)": "E&xit",
@@ -67,7 +67,7 @@ EN: dict[str, str] = {
     "지역 종합 분석": "Multi-site comparison",
     "통합 Excel 저장": "Export combined Excel",
     "‘+ 지역 추가’로 지역을 추가하세요.": "Use [+ Add site] to add a site.",
-    "FOCA-SW v4.4.1": "FOCA-SW v4.4.1",
+    "FOCA-SW v{version}": "FOCA-SW v{version}",
 
     # ══════════════════ 언어 선택 ══════════════════
     "언어 선택 / Language": "Language",
@@ -87,7 +87,7 @@ EN: dict[str, str] = {
     "지역명": "Site name",
     "예: 세종, 청주, 오송 ...": "e.g. Sejong, Cheongju, Osong ...",
     "면적 (가로 × 세로)": "Area (width × length)",
-    "환경 (복원 유형)": "Environment (restoration type)",
+    "대상지 유형 (메타데이터)": "Site category (metadata)",
     "입력 필요": "Input required",
     "지역명을 입력해 주세요.": "Please enter a site name.",
     "중복된 지역명": "Duplicate site name",
@@ -100,9 +100,9 @@ EN: dict[str, str] = {
     "여러 지역은 우상단 [지역 종합 분석]으로 비교.":
         "Site '{name}' added — use [+ Add] on the Tree/Shrub tab, then [Calculate]. "
         "Compare multiple sites with [Multi-site comparison] at the top right.",
-    "📍 지역: <b>{name}</b>　|　면적: {w} × {h} m  (<b>{area}</b> ㎡)　|　환경: <b>{env}</b>":
+    "📍 지역: <b>{name}</b>　|　면적: {w} × {h} m  (<b>{area}</b> ㎡)　|　대상지 유형: <b>{env}</b>":
         "📍 Site: <b>{name}</b>　|　Area: {w} × {h} m  (<b>{area}</b> m²)　|　"
-        "Environment: <b>{env}</b>",
+        "Site category: <b>{env}</b>",
 
     # ══════════════════ 안내 화면 ══════════════════
     "안내": "Overview",
@@ -114,14 +114,14 @@ EN: dict[str, str] = {
         "contribution of native restoration species.\nAfter adding several sites, use "
         "[Multi-site comparison] at the top right to compare total carbon storage.",
 
-    "<b>FOCA-SW (통합 Ver. 4.4.1)</b><br><br>":
-        "<b>FOCA-SW (Integrated Ver. 4.4.1)</b><br><br>",
+    "<b>FOCA-SW (통합 Ver. {version})</b><br><br>":
+        "<b>FOCA-SW (Integrated Ver. {version})</b><br><br>",
     "지역(권역)별로 탭을 동적으로 추가해 각 지역의 <b>탄소저장량 추정 + 수종별 기여도</b>를 "
     "독립적으로 다룹니다.<br>":
         "Sites are added as tabs, each handling its own <b>carbon storage projection "
         "and species-level contribution</b>.<br>",
-    "&nbsp;&nbsp;· [+ 지역 추가] — 지역명/면적/환경 입력 → 지역 탭 생성<br>":
-        "&nbsp;&nbsp;· [+ Add site] — enter site name, area and environment to create "
+    "&nbsp;&nbsp;· [+ 지역 추가] — 지역명/면적/대상지 유형 입력 → 지역 탭 생성<br>":
+        "&nbsp;&nbsp;· [+ Add site] — enter site name, area and site category to create "
         "a site tab<br>",
     "&nbsp;&nbsp;· [지역 종합 분석] — 지역별 총 탄소저장량 비교 대시보드<br><br>":
         "&nbsp;&nbsp;· [Multi-site comparison] — dashboard comparing total carbon "
@@ -368,8 +368,8 @@ EN: dict[str, str] = {
         "is exaggerated for legibility in the simplified 3D geometry. Year 0 is the "
         "current input state.",
     "시각화 갱신 실패: {error}": "Failed to refresh the 3D view: {error}",
-    "지역: {name} · 환경: {env} · 면적: {w:g} × {h:g} m":
-        "Site: {name} · Environment: {env} · Area: {w:g} × {h:g} m",
+    "지역: {name} · 대상지 유형: {env} · 면적: {w:g} × {h:g} m":
+        "Site: {name} · Site category: {env} · Area: {w:g} × {h:g} m",
     "표시할 유효 교목/관목 입력이 없습니다.":
         "There are no valid tree or shrub entries to display.",
     "항목을 추가한 뒤 계산하거나 새로고침하세요.":

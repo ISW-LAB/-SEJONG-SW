@@ -1,4 +1,4 @@
-# FOCA-SW v4.4.1 build verification
+# FOCA-SW v4.4.2 build verification
 
 Verification date: 2026-09-06 (Asia/Seoul)
 
@@ -12,7 +12,7 @@ Verification date: 2026-09-06 (Asia/Seoul)
 
 ## Checks performed
 
-1. `python -m unittest discover -s tests -v`: 11 tests passed.
+1. `python -m unittest discover -s tests -v`: 12 tests passed.
 2. `python build_exe.py --onedir --clean-cache`: completed successfully.
 3. `dist/FOCA-SW/FOCA-SW.exe --lang en`: startup smoke test passed.
 4. `python build_updater.py`: completed successfully.
@@ -23,11 +23,10 @@ Verification date: 2026-09-06 (Asia/Seoul)
 
 | Artifact | Bytes | SHA-256 |
 |---|---:|---|
-| `dist/FOCA-SW/FOCA-SW.exe` | 13,184,074 | `06319A20E21A9404C5BA68E7A7578879516D061508C1F35C4676029A8BF990D5` |
-| `dist/수종데이터업데이터.exe` | 47,766,249 | `628B497F49B6F9832897EE12FF2BFA169215DBE9773F4D4743F228187B1358E7` |
-| `installer_output/FOCA-SW_Setup_4.4.1.exe` | 103,241,556 | `D3473D3E5A82333E32C238534822A00F03341755BB0CD4FF9BF40681FD7A44F5` |
+| `dist/FOCA-SW/FOCA-SW.exe` | 13,184,477 | `FE5D4081A9190D1782A9A69262C3A5F8ECBB0F9DA45AF7E6D7EDC7A2360AFFE8` |
+| `dist/수종데이터업데이터.exe` | 47,766,574 | `4690BA947596602412C77D8EA103B784868FBB9F5F1CD69BDA717C46410E08DA` |
+| `installer_output/FOCA-SW_Setup_4.4.2.exe` | 103,245,254 | `50F6650FA3AFD21E3DF2EB5D2CBC327788E1CDFC5AC8B6AC6AD69FF7270390A9` |
 
 The executable and installer are reproducible local build outputs and are not
 tracked in Git. The installer is not Authenticode-signed; users should verify
 the release source tag and locally generated checksum when reproducing it.
-

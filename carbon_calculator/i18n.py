@@ -80,7 +80,7 @@ def tr(text: str) -> str:
     return EN.get(text, text)
 
 
-# ─────────────────────────── 수종·환경 이름 ───────────────────────────
+# ─────────────────────────── 수종·대상지 유형 이름 ───────────────────────────
 
 _QUALIFIER_RE = re.compile(r"^\s*(?P<base>[^(]+?)\s*\((?P<qual>.*)\)\s*$")
 
@@ -120,7 +120,7 @@ def species_name(name: str) -> str:
 
 
 def environment_name(env: str) -> str:
-    """복원 환경(유형) 표시명."""
+    """대상지 유형 메타데이터의 표시명."""
     if _current == LANG_KO or not env:
         return env
     return _json_environments.get(env) or ENVIRONMENT_EN.get(env, env)

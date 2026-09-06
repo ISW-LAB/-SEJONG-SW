@@ -32,6 +32,7 @@ from .data2 import (
 )
 from .equation_eval import EvaluationError, evaluate
 from .i18n import species_name, tr
+from .version import __version__
 from .plotting import MatplotlibCanvas
 from .ui_scale import apply_dialog_size, pt, px
 from .widgets import (
@@ -388,7 +389,10 @@ class Carbon2MainWindow(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle(tr("FOCA-SW (Ver. 4.4.1 - 탄소저장량 기여도)"))
+        self.setWindowTitle(
+            tr("FOCA-SW (Ver. {version} - 탄소저장량 기여도)")
+            .format(version=__version__)
+        )
         # 창 크기는 combined_window(통합 실행 진입점 main.py) 에서 설정.
         # centralWidget 만 사용되므로 이 창 자체의 크기는 영향 없음.
 

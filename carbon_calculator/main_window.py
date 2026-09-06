@@ -34,6 +34,7 @@ from .calculations import (
     CarbonRow, RangeViolation, calculate_carbon, project_future_carbon,
 )
 from .i18n import environment_name, species_name, tr
+from .version import __version__
 from .data import (
     DEFAULT_ENVIRONMENT, SpeciesData, shrub_species_for_env, tree_species_for_env,
 )
@@ -497,7 +498,9 @@ class MainWindow(QMainWindow):
     def __init__(self, environment: str = DEFAULT_ENVIRONMENT,
                  region_name: str = "", area_w: int = 0, area_h: int = 0):
         super().__init__()
-        self.setWindowTitle(tr("FOCA-SW (Ver. 4.4.1 - Python)"))
+        self.setWindowTitle(
+            tr("FOCA-SW (Ver. {version} - Python)").format(version=__version__)
+        )
         # 창 크기는 combined_window(통합 실행 진입점 main.py) 에서 설정.
         # centralWidget 만 사용되므로 이 창 자체의 크기는 영향 없음.
 

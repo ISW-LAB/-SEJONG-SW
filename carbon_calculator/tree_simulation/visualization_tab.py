@@ -122,7 +122,7 @@ class VegetationVisualizationTab(QWidget):
             return
         self._snapshot = snapshot
         self.region_label.setText(
-            tr("지역: {name} · 환경: {env} · 면적: {w:g} × {h:g} m").format(
+            tr("지역: {name} · 대상지 유형: {env} · 면적: {w:g} × {h:g} m").format(
                 name=snapshot.region_name or tr("지역"),
                 env=environment_name(snapshot.environment),
                 w=snapshot.area_w, h=snapshot.area_h,

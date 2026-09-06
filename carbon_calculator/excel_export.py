@@ -355,7 +355,7 @@ def _sheet_comparison(wb: Workbook, comparison_data: list) -> None:
     ws.cell(1, 1, tr("지역별 총 탄소저장량 비교 분석")).font = TITLE_FONT
     ws.merge_cells("A1:G1")
 
-    headers = [tr("지역명"), tr("면적(㎡)"), tr("환경"), tr("교목(kgC)"), tr("관목(kgC)"),
+    headers = [tr("지역명"), tr("면적(㎡)"), tr("대상지 유형"), tr("교목(kgC)"), tr("관목(kgC)"),
                tr("총 탄소저장량(kgC)"), tr("단위면적당(kgC/㎡)")]
     for c, h in enumerate(headers, 1):
         ws.cell(2, c, h)

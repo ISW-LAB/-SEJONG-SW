@@ -6,7 +6,7 @@ executables: **FOCA-SW** (the core software) and the
 **species data updater**, which applies a new species dataset and rebuilds the
 core executable.
 
-The version 4.4.1 scientific library separates its user-facing and compatibility
+The version 4.4.2 scientific library separates its user-facing and compatibility
 coverage. The primary site-assessment workflow exposes **22 native records**
 (seven tree and 15 shrub records). A further **55 compatibility records**
 (30 domestic and 25 international records) are maintained in the updater and
@@ -148,7 +148,7 @@ updater_빌드.bat
 3. Compile with either
    - Inno Setup Compiler: open `installer.iss`, then `Build > Compile`, or
    - the command line: `"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss`
-4. Output: `installer_output/FOCA-SW_Setup_4.4.1.exe`
+4. Output: `installer_output/FOCA-SW_Setup_4.4.2.exe`
 
 ---
 
@@ -165,7 +165,8 @@ English mode can label it.
 - `SPECIES_EN` — base species name → scientific name. Qualifiers such as
   `(지상부)` or `(전체, 경남)` are translated automatically
   (`후박나무(지상부)` → *Machilus thunbergii* (aboveground)).
-- `ENVIRONMENTS_EN` — English labels used by the site-configuration control.
+- `ENVIRONMENTS_EN` — English labels displayed by the site-category metadata
+  control. These labels do not select coefficients.
 
 When adding a species, add its scientific name to `SPECIES_EN` as well; otherwise
 English mode falls back to the Korean name rather than inventing a binomial.

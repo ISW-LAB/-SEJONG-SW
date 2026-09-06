@@ -17,12 +17,12 @@
 ;    B) 명령줄:
 ;         "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
 ;
-;    → installer_output\FOCA-SW_Setup_4.4.1.exe 생성
+;    → installer_output\FOCA-SW_Setup_4.4.2.exe 생성
 ;       이 Setup.exe 하나만 다른 컴퓨터로 옮겨 실행하면 설치된다.
 ; ============================================================================
 
 #define MyAppName "FOCA-SW"
-#define MyAppVersion "4.4.1"
+#define MyAppVersion "4.4.2"
 #define MyAppPublisher "세종수목원"
 #define MyAppExeName "FOCA-SW.exe"
 ; --onedir 빌드 산출물 폴더 (installer.iss 기준 상대경로)
@@ -46,8 +46,8 @@ Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
 ; 64비트 전용 (PyInstaller 산출물이 64비트일 때)
-ArchitecturesAllowed=x64
-ArchitecturesInstallIn64BitMode=x64
+ArchitecturesAllowed=x64os
+ArchitecturesInstallIn64BitMode=x64os
 ; 관리자 권한 없이 사용자 폴더에도 설치 가능하도록 선택지 제공
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog commandline

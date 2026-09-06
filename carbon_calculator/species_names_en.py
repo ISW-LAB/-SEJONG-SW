@@ -101,7 +101,7 @@ QUALIFIER_EN: dict[str, str] = {
     "경기도": "Gyeonggi-do",
 }
 
-# 복원 환경(유형)
+# 대상지 유형 메타데이터
 ENVIRONMENT_EN: dict[str, str] = {
     "산불피해지 자연복원": "Post-fire site, natural restoration",
     "산불피해지 인공복원": "Post-fire site, artificial restoration",

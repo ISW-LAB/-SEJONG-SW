@@ -1,9 +1,9 @@
-# FOCA-SW v4.4.1
+# FOCA-SW v4.4.2
 
-FOCA-SW v4.4.1 is the source release evaluated in the accompanying SoftwareX
-manuscript. It retains the v4.4 interface and scientific coverage while making
-the executable behaviour, documentation, and verification assets consistent
-with the submitted article.
+FOCA-SW v4.4.2 is the source release evaluated in the accompanying SoftwareX
+manuscript. It retains the scientific coverage of v4.4.1 while making the
+meaning of site-category metadata explicit and preventing version drift among
+the interface, packaging metadata, citation file, and release documentation.
 
 ## Evaluated scope
 
@@ -20,8 +20,11 @@ evaluator but are not selectable in the primary site-assessment interface.
 
 ## Verification and hardening
 
-- Site category is retained as descriptive project metadata and no longer
-  selects or modifies allometric coefficients.
+- The interface and XLSX reports now label the legacy site-category field as
+  descriptive metadata; it does not select or modify allometric coefficients.
+- The interface version is imported from one package module, while a regression
+  test checks the same value against the citation file, installer, and release
+  notes.
 - Equation strings are evaluated through an abstract-syntax-tree allowlist;
   Python `eval` is not used.
 - A tracked regression suite verifies the scientific core, data-library
