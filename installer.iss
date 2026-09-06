@@ -1,5 +1,5 @@
 ; ============================================================================
-;  세종수목원 탄소저장량 측정 모듈 — Inno Setup 설치 마법사 스크립트
+;  FOCA-SW - Inno Setup 설치 마법사 스크립트
 ; ----------------------------------------------------------------------------
 ;  이 스크립트는 "설치형(.exe Setup)" 배포본을 만든다.
 ;  사용자는 생성된 Setup.exe 를 실행하면 프로그램이 설치되고
@@ -8,7 +8,7 @@
 ;  [사전 준비]
 ;    1) Inno Setup 6 설치:  https://jrsoftware.org/isdl.php
 ;    2) onedir 형태로 빌드:  python build_exe.py --onedir
-;         → dist\탄소저장량측정모듈\탄소저장량측정모듈.exe 생성
+;         → dist\FOCA-SW\FOCA-SW.exe 생성
 ;
 ;  [설치본 만들기]
 ;    A) Inno Setup Compiler 에서 이 파일(installer.iss)을 열고 [Build > Compile]
@@ -16,16 +16,16 @@
 ;    B) 명령줄:
 ;         "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
 ;
-;    → installer_output\탄소저장량측정모듈_Setup_3.0.exe  생성
+;    → installer_output\FOCA-SW_Setup_4.4.exe 생성
 ;       이 Setup.exe 하나만 다른 컴퓨터로 옮겨 실행하면 설치된다.
 ; ============================================================================
 
-#define MyAppName "세종수목원 탄소저장량 측정 모듈"
-#define MyAppVersion "3.0"
+#define MyAppName "FOCA-SW"
+#define MyAppVersion "4.4"
 #define MyAppPublisher "세종수목원"
-#define MyAppExeName "탄소저장량측정모듈.exe"
+#define MyAppExeName "FOCA-SW.exe"
 ; --onedir 빌드 산출물 폴더 (installer.iss 기준 상대경로)
-#define MyDistDir "dist\탄소저장량측정모듈"
+#define MyDistDir "dist\FOCA-SW"
 
 [Setup]
 ; AppId 는 프로그램을 고유 식별 (업그레이드/제거 시 동일 값 유지). 임의 고정 GUID.
@@ -34,11 +34,11 @@ AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppVerName={#MyAppName} {#MyAppVersion}
 AppPublisher={#MyAppPublisher}
-DefaultDirName={autopf}\탄소저장량측정모듈
+DefaultDirName={autopf}\FOCA-SW
 DefaultGroupName=세종수목원
 DisableProgramGroupPage=yes
 OutputDir=installer_output
-OutputBaseFilename=탄소저장량측정모듈_Setup_{#MyAppVersion}
+OutputBaseFilename=FOCA-SW_Setup_{#MyAppVersion}
 SetupIconFile=icon.ico
 UninstallDisplayIcon={app}\{#MyAppExeName}
 Compression=lzma2

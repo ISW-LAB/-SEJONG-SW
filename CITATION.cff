@@ -1,0 +1,33 @@
+cff-version: 1.2.0
+message: "If you use FOCA-SW in research, please cite the accompanying SoftwareX article and this software release."
+title: "FOCA-SW: Forest Carbon Estimation and Scenario Analysis Software for Restoration Sites"
+type: software
+version: 4.4
+date-released: 2026-09-06
+authors:
+  - family-names: Kim
+    given-names: Chan-Beom
+  - family-names: Kim
+    given-names: Hak-Koo
+  - family-names: Lee
+    given-names: Euijong
+  - family-names: Jeong
+    given-names: Kyungchang
+  - family-names: Jo
+    given-names: Gyuchan
+    email: gc.jo-isw@cbnu.ac.kr
+  - family-names: Lee
+    given-names: Seonghun
+  - family-names: Kwon
+    given-names: Jin-On
+  - family-names: Park
+    given-names: Ki-Hyung
+repository-code: "https://github.com/ISW-LAB/-SEJONG-SW"
+url: "https://github.com/ISW-LAB/-SEJONG-SW"
+license: MIT
+keywords:
+  - forest carbon
+  - restoration
+  - allometric equations
+  - scenario analysis
+  - decision support

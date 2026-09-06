@@ -1,7 +1,7 @@
 {
   "_schema": {
     "version": "2.0",
-    "description": "세종수목원 탄소저장량 측정 모듈 통합 수종 데이터 (교목·관목·국내·국외).",
+    "description": "FOCA-SW 통합 수종 데이터 (교목·관목·국내·국외).",
     "carbon1_array": [
       "a",
       "b",

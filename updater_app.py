@@ -2,7 +2,7 @@
 """
 수종 데이터 업데이터 (자체 완결형).
 
-이 프로그램은 **탄소저장량측정모듈(main.py) 의 전체 코드 로직을 내부에 내장**하고
+이 프로그램은 **FOCA-SW(main.py)의 전체 코드 로직을 내부에 내장**하고
 있어, 소스 폴더 없이 이 exe 하나만으로 새 수종 데이터(JSON)를 반영한 실행파일을
 만들 수 있다.
 
@@ -11,10 +11,10 @@
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 [① exe 재빌드 — 자체 완결]  통합 species_data.json 을 입력받아,
    내장된 소스(carbon_calculator + main.py + build_exe.py)를 임시 작업폴더로
-   풀고 그 안에 JSON 을 넣은 뒤 PyInstaller 로 새 탄소저장량측정모듈.exe 를 빌드한다.
+   풀고 그 안에 JSON 을 넣은 뒤 PyInstaller 로 새 FOCA-SW.exe 를 빌드한다.
    → 소스 트리를 옆에 둘 필요 없음. (단, PC 에 Python 3.10+ 이 있어야 컴파일 가능)
 
-[② JSON 적용 — Python 불필요]  기존 탄소저장량측정모듈.exe 옆에 JSON 을 복사만 한다.
+[② JSON 적용 — Python 불필요]  기존 FOCA-SW.exe 옆에 JSON 을 복사만 한다.
    다음 실행 시 자동 반영. 재빌드가 필요 없을 때 가장 빠른 경로.
 
 JSON 양식:  species_data.json (통합본 — 교목·관목·국내·국외 4개 섹션)
@@ -45,15 +45,15 @@ from PyQt5.QtWidgets import (
 
 # ── 표시 언어 ────────────────────────────────────────────────────────────
 # 이 앱은 소스 폴더 없이 단독 배포되므로 carbon_calculator 에 의존하지 않고
-# 자체 대응표를 갖는다. 언어 설정은 본 프로그램(탄소저장량측정모듈)과 같은
-# QSettings 키를 공유해 두 앱의 표시 언어가 함께 움직인다.
+# 자체 대응표를 갖는다. 언어 설정은 FOCA-SW와 같은 QSettings 키를 공유해
+# 두 앱의 표시 언어가 함께 움직인다. 기존 설치의 설정 호환성을 위해 키는 유지한다.
 _SETTINGS_ORG = "SejongArboretum"
 _SETTINGS_APP = "CarbonStorageModule"
 _SETTINGS_KEY = "language"
 
 _EN: dict[str, str] = {
-    "수종 데이터 업데이터 (자체 완결형) — 탄소저장량 측정 모듈":
-        "Species Data Updater (self-contained) — Carbon Storage Assessment Module",
+    "수종 데이터 업데이터 (자체 완결형) - FOCA-SW":
+        "Species Data Updater (self-contained) - FOCA-SW",
     "수종 데이터 JSON (통합 species_data.json)":
         "Species data JSON (combined species_data.json)",
     "— 파일을 선택하면 검증됩니다": "— select a file to validate it",
@@ -62,8 +62,8 @@ _EN: dict[str, str] = {
     "폴더...": "Folder...",
     "파일/폴더 경로를 선택하거나 직접 입력하세요":
         "Choose a file or folder, or type a path",
-    "① exe 재빌드   —   내장 소스로 새 탄소저장량측정모듈.exe 생성 (권장)":
-        "① Rebuild executable — build a new module executable from the bundled "
+    "① exe 재빌드   —   내장 소스로 새 FOCA-SW.exe 생성 (권장)":
+        "① Rebuild executable — build a new FOCA-SW executable from the bundled "
         "sources (recommended)",
     "이 업데이터에 내장된 전체 코드 로직을 사용해 JSON 이 반영된 새 exe 를 만듭니다. "
     "소스 폴더가 옆에 없어도 됩니다.\n"
@@ -87,23 +87,23 @@ _EN: dict[str, str] = {
     "출력 폴더를 지정하세요.": "Specify an output folder.",
     "② JSON 적용   —   기존 exe 옆에 복사만 (Python 불필요)":
         "② Apply JSON — copy it next to an existing executable (no Python required)",
-    "이미 만들어진 탄소저장량측정모듈.exe 가 있다면, 그 옆에 JSON 을 복사해 "
+    "이미 만들어진 FOCA-SW.exe 가 있다면, 그 옆에 JSON 을 복사해 "
     "다음 실행 시 즉시 반영합니다. 재빌드가 필요 없을 때 사용하세요.":
         "If a built executable already exists, the JSON is copied next to it and takes "
         "effect the next time it runs. Use this when a rebuild is unnecessary.",
-    "탄소저장량측정모듈.exe 위치": "Location of the module executable",
+    "FOCA-SW.exe 위치": "Location of the FOCA-SW executable",
     "찾기...": "Browse...",
     "JSON 적용 (복사)": "Apply JSON (copy)",
     "완료 — JSON 복사됨": "Done — JSON copied",
     "JSON 검증에 실패했습니다 (상단 상태 확인).":
         "JSON validation failed (see the status above).",
-    "탄소저장량측정모듈.exe 위치를 선택하세요.":
-        "Select the location of the module executable.",
+    "FOCA-SW.exe 위치를 선택하세요.":
+        "Select the location of the FOCA-SW executable.",
     "로그": "Log",
     "통합 species_data.json 선택": "Select the combined species_data.json",
     "JSON 파일 (*.json)": "JSON file (*.json)",
     "출력 폴더 선택": "Select output folder",
-    "탄소저장량측정모듈.exe 선택": "Select the module executable",
+    "FOCA-SW.exe 선택": "Select the FOCA-SW executable",
     "실행 파일 (*.exe)": "Executable (*.exe)",
     # 검증 결과
     "JSON 파싱 오류: {error}": "JSON parse error: {error}",
@@ -133,8 +133,8 @@ _EN: dict[str, str] = {
     "[실패] {error}": "[Failed] {error}",
     "[완료] {name} → {path}": "[Done] {name} → {path}",
     "[정리] 구버전 JSON 제거: {names}": "[Cleanup] removed legacy JSON: {names}",
-    "탄소저장량측정모듈.exe 를 다시 실행하면 새 수종 데이터가 적용됩니다.":
-        "Restart the module executable to load the new species data.",
+    "FOCA-SW.exe 를 다시 실행하면 새 수종 데이터가 적용됩니다.":
+        "Restart FOCA-SW to load the new species data.",
     # 언어 선택
     "언어 / Language": "Language",
     "한국어": "한국어",
@@ -392,7 +392,7 @@ JSON_NAME     = "species_data.json"
 # ── 플랫폼별 venv 레이아웃 / 실행파일 확장자 ──────────────────────────────
 _VENV_BIN     = "Scripts" if os.name == "nt" else "bin"
 _EXE_EXT      = ".exe" if os.name == "nt" else ""
-MAIN_APP_NAME = "탄소저장량측정모듈"
+MAIN_APP_NAME = "FOCA-SW"
 MAIN_EXE_NAME = f"{MAIN_APP_NAME}{_EXE_EXT}"
 
 # 작업폴더로 복사할 때 제외할 항목
@@ -420,7 +420,7 @@ def _find_python() -> Path | None:
 
 
 def _auto_find_main_exe() -> Path | None:
-    """탄소저장량측정모듈.exe 를 자동 탐색 (현재 폴더 / dist/)."""
+    """FOCA-SW.exe 를 자동 탐색 (현재 폴더 / dist/)."""
     for candidate in [
         HERE / MAIN_EXE_NAME,
         HERE / "dist" / MAIN_EXE_NAME,
@@ -1261,7 +1261,7 @@ class UpdaterWindow(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle(tr("수종 데이터 업데이터 (자체 완결형) — 탄소저장량 측정 모듈"))
+        self.setWindowTitle(tr("수종 데이터 업데이터 (자체 완결형) - FOCA-SW"))
         self.setMinimumWidth(960)
         self._worker: BuildWorker | None = None
         self._out_user_edited = False   # 출력 폴더를 사용자가 직접 지정했는지
@@ -1295,7 +1295,7 @@ class UpdaterWindow(QMainWindow):
         keep = (self.json_row.edit.text(), self.out_row.edit.text(),
                 self.exe_row.edit.text(), self._out_user_edited)
         snap = self.editor.snapshot()
-        self.setWindowTitle(tr("수종 데이터 업데이터 (자체 완결형) — 탄소저장량 측정 모듈"))
+        self.setWindowTitle(tr("수종 데이터 업데이터 (자체 완결형) - FOCA-SW"))
         old = self.centralWidget()
         self._setup_ui()
         old.deleteLater()
@@ -1346,7 +1346,7 @@ class UpdaterWindow(QMainWindow):
         # 세 경로 행의 라벨 폭을 현재 폰트로 잰 가장 긴 라벨에 맞춘다 (배율이 커져도 잘리지 않음)
         global _STATUS_INDENT
         fm = self.fontMetrics()
-        _label_texts = ("species_data.json", tr("출력 폴더 (exe 저장 위치)"), tr("탄소저장량측정모듈.exe 위치"))
+        _label_texts = ("species_data.json", tr("출력 폴더 (exe 저장 위치)"), tr("FOCA-SW.exe 위치"))
         self._label_w = max(_px(215), max(fm.horizontalAdvance(t) for t in _label_texts) + _px(16))
         _STATUS_INDENT = self._label_w + _px(8)
 
@@ -1369,7 +1369,7 @@ class UpdaterWindow(QMainWindow):
         v.addWidget(self.editor, 3)
 
         # ── ① exe 재빌드 (자체 완결) ───────────────────────────────
-        build_grp = QGroupBox(tr("① exe 재빌드   —   내장 소스로 새 탄소저장량측정모듈.exe 생성 (권장)"))
+        build_grp = QGroupBox(tr("① exe 재빌드   —   내장 소스로 새 FOCA-SW.exe 생성 (권장)"))
         build_grp.setStyleSheet("QGroupBox { font-weight: bold; }")
         bl = QVBoxLayout(build_grp)
 
@@ -1412,13 +1412,13 @@ class UpdaterWindow(QMainWindow):
         apply_grp = QGroupBox(tr("② JSON 적용   —   기존 exe 옆에 복사만 (Python 불필요)"))
         al = QVBoxLayout(apply_grp)
         _anote = QLabel(
-            tr("이미 만들어진 탄소저장량측정모듈.exe 가 있다면, 그 옆에 JSON 을 복사해 "
+            tr("이미 만들어진 FOCA-SW.exe 가 있다면, 그 옆에 JSON 을 복사해 "
             "다음 실행 시 즉시 반영합니다. 재빌드가 필요 없을 때 사용하세요."))
         _anote.setStyleSheet(_note_css())
         _anote.setWordWrap(True)
         al.addWidget(_anote)
 
-        self.exe_row = FilePickRow(tr("탄소저장량측정모듈.exe 위치"), tr("찾기..."), label_width=self._label_w)
+        self.exe_row = FilePickRow(tr("FOCA-SW.exe 위치"), tr("찾기..."), label_width=self._label_w)
         self.exe_row.btn.clicked.connect(self._pick_exe)
         self.exe_row.edit.textChanged.connect(self._recheck_exe)
         self.exe_status = QLabel("")
@@ -1506,7 +1506,7 @@ class UpdaterWindow(QMainWindow):
 
     def _pick_exe(self):
         path, _ = QFileDialog.getOpenFileName(
-            self, tr("탄소저장량측정모듈.exe 선택"), str(HERE), tr("실행 파일 (*.exe)"))
+            self, tr("FOCA-SW.exe 선택"), str(HERE), tr("실행 파일 (*.exe)"))
         if path:
             self.exe_row.edit.setText(path)
 
@@ -1590,7 +1590,7 @@ class UpdaterWindow(QMainWindow):
 
         exe_path = self.exe_row.path
         if not exe_path or not exe_path.exists():
-            self.apply_status.setText(tr("탄소저장량측정모듈.exe 위치를 선택하세요."))
+            self.apply_status.setText(tr("FOCA-SW.exe 위치를 선택하세요."))
             self.apply_status.setStyleSheet("color: red;")
             return
 
@@ -1615,7 +1615,7 @@ class UpdaterWindow(QMainWindow):
             self.log.appendPlainText(
                 tr("[정리] 구버전 JSON 제거: {names}").format(names=", ".join(removed)))
         self.log.appendPlainText("")
-        self.log.appendPlainText(tr("탄소저장량측정모듈.exe 를 다시 실행하면 새 수종 데이터가 적용됩니다."))
+        self.log.appendPlainText(tr("FOCA-SW.exe 를 다시 실행하면 새 수종 데이터가 적용됩니다."))
         self.apply_status.setText(tr("완료 — JSON 복사됨"))
         self.apply_status.setStyleSheet("color: green;")
 

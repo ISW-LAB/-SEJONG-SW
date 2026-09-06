@@ -1,7 +1,7 @@
 @echo off
 REM ============================================================
 REM  수종데이터업데이터.exe 빌드 (자체 완결형)
-REM  - 탄소저장량측정모듈 전체 소스를 내장한 updater.exe 를 만든다.
+REM  - FOCA-SW 전체 소스를 내장한 updater.exe 를 만든다.
 REM  - Windows + Python 3.10 이상 필요.
 REM ============================================================
 chcp 65001 >nul
@@ -23,6 +23,6 @@ if errorlevel 1 (
 echo.
 echo [완료] dist\수종데이터업데이터.exe 생성됨.
 echo        이 exe 하나만 배포하면, 사용자는 UI 에서 species_data.json 을
-echo        선택해 원하는 폴더에 탄소저장량측정모듈.exe 를 빌드할 수 있습니다.
+echo        선택해 원하는 폴더에 FOCA-SW.exe 를 빌드할 수 있습니다.
 echo.
 pause

@@ -245,7 +245,7 @@ class CombinedMainWindow(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle(tr("복원본지 탄소저장량 측정 모듈 - 통합 (Ver. 4.4)"))
+        self.setWindowTitle(tr("FOCA-SW - 산림복원지 탄소추정 및 시나리오 분석 소프트웨어 (Ver. 4.4)"))
         apply_window_size(self, wfrac=0.84, hfrac=0.88, min_w=1100, min_h=680)
 
         # 지역 목록: 각 항목 {name, w, h, env, window(Carbon1Window), container}
@@ -601,7 +601,7 @@ class CombinedMainWindow(QMainWindow):
         bar = QStatusBar()
         self._status_label = QLabel(tr("‘+ 지역 추가’로 지역을 추가하세요."))
         bar.addWidget(self._status_label, 1)
-        version_label = QLabel(tr("Carbon1 v4.x · 통합(지역별) v4.4"))
+        version_label = QLabel(tr("FOCA-SW v4.4"))
         version_label.setStyleSheet("color: #777;")
         bar.addPermanentWidget(version_label)
         self.setStatusBar(bar)
@@ -609,8 +609,8 @@ class CombinedMainWindow(QMainWindow):
     def _show_about(self) -> None:
         QMessageBox.about(
             self,
-            tr("복원본지 탄소저장량 측정 모듈"),
-            tr("<b>복원본지 탄소저장량 측정 모듈 (통합 Ver. 4.4)</b><br><br>")
+            tr("FOCA-SW"),
+            tr("<b>FOCA-SW (통합 Ver. 4.4)</b><br><br>")
             + tr("지역(권역)별로 탭을 동적으로 추가해 각 지역의 "
                  "<b>탄소저장량 추정 + 수종별 기여도</b>를 독립적으로 다룹니다.<br>")
             + tr("&nbsp;&nbsp;· [+ 지역 추가] — 지역명/면적/환경 입력 → 지역 탭 생성<br>")

@@ -387,7 +387,7 @@ class Carbon2MainWindow(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle(tr("복원본지 탄소저장량 측정 모듈 (Ver. 2.0 - 탄소저장량 기여도)"))
+        self.setWindowTitle(tr("FOCA-SW (Ver. 4.4 - 탄소저장량 기여도)"))
         # 창 크기는 combined_window(통합 실행 진입점 main.py) 에서 설정.
         # centralWidget 만 사용되므로 이 창 자체의 크기는 영향 없음.
 

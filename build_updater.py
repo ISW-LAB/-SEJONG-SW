@@ -2,10 +2,10 @@
 """
 updater_app.py → 수종데이터업데이터.exe 빌드 스크립트 (자체 완결형).
 
-탄소저장량측정모듈의 **전체 소스(carbon_calculator + main.py + build_exe.py 등)를
+FOCA-SW의 **전체 소스(carbon_calculator + main.py + build_exe.py 등)를
 updater.exe 내부에 번들**한다. 따라서 빌드된 수종데이터업데이터.exe 는 소스 폴더 없이
 단독으로 배포·실행할 수 있으며, 사용자는 통합 species_data.json 만 넣으면 새
-탄소저장량측정모듈.exe 를 빌드할 수 있다.
+FOCA-SW.exe 를 빌드할 수 있다.
 
 사용법:
     python build_updater.py              # onefile (기본)
@@ -57,7 +57,7 @@ def _venv_ready(python: Path) -> bool:
     )
     return r.returncode == 0
 
-# ── updater.exe 내부에 번들할 소스 (탄소저장량측정모듈 전체 코드 로직) ──────────
+# ── updater.exe 내부에 번들할 소스 (FOCA-SW 전체 코드 로직) ──────────
 # 런타임에 _MEIPASS/bundled_src 로 풀려, updater 가 이를 임시 작업폴더로 복사해 빌드한다.
 _BUNDLE_ROOT_FILES = (
     "main.py",
@@ -80,7 +80,7 @@ def find_icon() -> Path | None:
 
 
 def collect_bundled_datas() -> list[tuple[str, str]]:
-    """탄소저장량측정모듈 소스를 PyInstaller datas 형식 (src, dest) 로 수집.
+    """FOCA-SW 소스를 PyInstaller datas 형식 (src, dest) 로 수집.
 
     dest 'bundled_src' 는 런타임에 _MEIPASS/bundled_src 로 풀린다.
     """

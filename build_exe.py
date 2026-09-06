@@ -40,7 +40,7 @@ from pathlib import Path
 
 HERE      = Path(__file__).resolve().parent
 ENTRY     = HERE / "main.py"
-APP_NAME  = "탄소저장량측정모듈"
+APP_NAME  = "FOCA-SW"
 REQ_FILE  = HERE / "requirements.txt"
 
 # ── 플랫폼별 venv 레이아웃 / 실행파일 확장자 ──────────────────────────────

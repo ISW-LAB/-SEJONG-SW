@@ -43,15 +43,13 @@ EN: dict[str, str] = {
     "기타": "Other",
 
     # ══════════════════ 메인 창 · 메뉴 ══════════════════
-    "복원본지 탄소저장량 측정 모듈 - 통합 (Ver. 4.4)":
-        "Carbon Storage Assessment Module for Restoration Sites "
-        "— Integrated (Ver. 4.4)",
-    "복원본지 탄소저장량 측정 모듈": "Carbon Storage Assessment Module for Restoration Sites",
-    "복원본지 탄소저장량 측정 모듈 (Ver. 1.1 - Python)":
-        "Carbon Storage Assessment Module for Restoration Sites (Ver. 1.1 — Python)",
-    "복원본지 탄소저장량 측정 모듈 (Ver. 2.0 - 탄소저장량 기여도)":
-        "Carbon Storage Assessment Module for Restoration Sites "
-        "(Ver. 2.0 — Species Contribution)",
+    "FOCA-SW - 산림복원지 탄소추정 및 시나리오 분석 소프트웨어 (Ver. 4.4)":
+        "FOCA-SW - Forest Carbon Estimation and Scenario Analysis Software for Restoration Sites (Ver. 4.4)",
+    "FOCA-SW": "FOCA-SW",
+    "FOCA-SW (Ver. 4.4 - Python)":
+        "FOCA-SW (Ver. 4.4 - Python)",
+    "FOCA-SW (Ver. 4.4 - 탄소저장량 기여도)":
+        "FOCA-SW (Ver. 4.4 - Species Contribution)",
     "파일(&F)": "&File",
     "통합 Excel 저장(&E)": "&Export combined Excel",
     "종료(&X)": "E&xit",
@@ -68,7 +66,7 @@ EN: dict[str, str] = {
     "지역 종합 분석": "Multi-site comparison",
     "통합 Excel 저장": "Export combined Excel",
     "‘+ 지역 추가’로 지역을 추가하세요.": "Use [+ Add site] to add a site.",
-    "Carbon1 v4.x · 통합(지역별) v4.4": "Carbon1 v4.x · Integrated (per-site) v4.4",
+    "FOCA-SW v4.4": "FOCA-SW v4.4",
 
     # ══════════════════ 언어 선택 ══════════════════
     "언어 선택 / Language": "Language",
@@ -115,9 +113,8 @@ EN: dict[str, str] = {
         "contribution of native restoration species.\nAfter adding several sites, use "
         "[Multi-site comparison] at the top right to compare total carbon storage.",
 
-    "<b>복원본지 탄소저장량 측정 모듈 (통합 Ver. 4.4)</b><br><br>":
-        "<b>Carbon Storage Assessment Module for Restoration Sites "
-        "(Integrated Ver. 4.4)</b><br><br>",
+    "<b>FOCA-SW (통합 Ver. 4.4)</b><br><br>":
+        "<b>FOCA-SW (Integrated Ver. 4.4)</b><br><br>",
     "지역(권역)별로 탭을 동적으로 추가해 각 지역의 <b>탄소저장량 추정 + 수종별 기여도</b>를 "
     "독립적으로 다룹니다.<br>":
         "Sites are added as tabs, each handling its own <b>carbon storage projection "

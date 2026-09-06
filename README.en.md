@@ -1,10 +1,18 @@
-# Carbon Storage Assessment Module for Restoration Sites
+# FOCA-SW - Forest Carbon Estimation and Scenario Analysis Software for Restoration Sites
 
 A PyQt5 port of the original MATLAB App Designer application
 (`Carbon_251002_5.mlapp` / `Carbon2_251013_1.mlapp`). The project builds two
-executables: the **carbon storage assessment module** (the core software) and the
+executables: **FOCA-SW** (the core software) and the
 **species data updater**, which applies a new species dataset and rebuilds the
 core executable.
+
+The version 4.4 scientific library separates its user-facing and compatibility
+coverage. The primary site-assessment workflow exposes **22 native records**
+(seven tree and 15 shrub records). A further **55 compatibility records**
+(30 domestic and 25 international records) are maintained in the updater and
+equation evaluator but are not selectable in the primary workflow. Together,
+the 77 named records implement 79 executable equations. This distinction is
+important when interpreting the software's current operational coverage.
 
 The interface, figures and Excel output are available in **Korean and English**.
 In English mode every species is labelled with its scientific name
@@ -91,7 +99,7 @@ python build_exe.py --clean-cache        # remove build/ and dist/ first
 python build_exe.py --rebuild-venv       # force re-creation of the build venv
 ```
 
-- Output: `dist/탄소저장량측정모듈.exe` (onefile) or `dist/탄소저장량측정모듈/` (onedir)
+- Output: `dist/FOCA-SW.exe` (onefile) or `dist/FOCA-SW/` (onedir)
 - If `species_data.json` is present in the project root it is bundled into the
   executable and loaded at runtime.
 - Use `--rebuild-venv` whenever `requirements.txt` changes. The build venv is
@@ -119,8 +127,8 @@ updater_빌드.bat
   (`carbon_calculator`, `main.py`, `build_exe.py`, ...), so it can be distributed
   on its own.
 - On launch it opens `species_data.json` in a **table editor** (four tabs — trees, shrubs,
-  domestic, international; double-click cells to edit; add/delete species; per-environment
-  coefficients for trees; validation before saving; a `.bak` backup on save). After editing,
+  domestic, international; double-click cells to edit; add/delete species; validation before
+  saving; a `.bak` backup on save). After editing,
   it offers two ways to apply the data:
   1. **Rebuild executable** — takes a new `species_data.json` and rebuilds the core
      executable from the bundled source (requires Python 3.10+ on the machine).
@@ -136,7 +144,7 @@ updater_빌드.bat
 3. Compile with either
    - Inno Setup Compiler: open `installer.iss`, then `Build > Compile`, or
    - the command line: `"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss`
-4. Output: `installer_output/탄소저장량측정모듈_Setup_3.0.exe`
+4. Output: `installer_output/FOCA-SW_Setup_4.4.exe`
 
 ---
 
@@ -153,7 +161,7 @@ English mode can label it.
 - `SPECIES_EN` — base species name → scientific name. Qualifiers such as
   `(지상부)` or `(전체, 경남)` are translated automatically
   (`후박나무(지상부)` → *Machilus thunbergii* (aboveground)).
-- `ENVIRONMENTS_EN` — restoration environment names.
+- `ENVIRONMENTS_EN` — English labels used by the site-configuration control.
 
 When adding a species, add its scientific name to `SPECIES_EN` as well; otherwise
 English mode falls back to the Korean name rather than inventing a binomial.
@@ -172,6 +180,16 @@ English mode falls back to the Korean name rather than inventing a binomial.
 | Korean text renders as boxes | Confirm the Windows font "Malgun Gothic" is installed |
 | Executable closes immediately | Rebuild with `python build_exe.py --debug` and read the console |
 | Text too large or too small | Adjust `FONT_SIZE_DELTA` in `carbon_calculator/font_config.py` |
+
+---
+
+## License
+
+The source code, build scripts, documentation, and repository figures are
+available under the [MIT License](LICENSE). The scientific equation library in
+`species_data.json` is provided under KOGL Type 1 (Attribution); see
+[DATA_LICENSE.md](DATA_LICENSE.md). Individual equations should also retain the
+bibliographic attribution of their source studies.
 
 ---
 
