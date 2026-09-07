@@ -36,7 +36,7 @@ class LibraryTests(unittest.TestCase):
         release_notes = (REPOSITORY_ROOT / "RELEASE_NOTES.md").read_text(encoding="utf-8")
         self.assertIn(f"version: {__version__}", cff)
         self.assertIn(f'#define MyAppVersion "{__version__}"', installer)
-        self.assertIn(f"# FOCA-SW v{__version__}", release_notes)
+        self.assertIn(f"# FORECAST-SW v{__version__}", release_notes)
 
     def test_release_library_counts(self) -> None:
         self.assertEqual(len(TREE_SPECIES), 7)

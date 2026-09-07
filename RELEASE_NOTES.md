@@ -1,6 +1,6 @@
-# FOCA-SW v1.0
+# FORECAST-SW v1.0
 
-FOCA-SW v1.0 is the first public, citable release evaluated in the accompanying
+FORECAST-SW v1.0 is the first public, citable release evaluated in the accompanying
 SoftwareX manuscript. This release establishes a synchronized baseline for the
 scientific library, graphical interface, packaging metadata, citation file,
 documentation, regression tests, and Windows distribution artifacts.
@@ -26,7 +26,10 @@ evaluator but are not selectable in the primary site-assessment interface.
   test checks the same value against the citation file, installer, and release
   notes.
 - Windows executable resources identify both the core application and the data
-  updater as FOCA-SW version 1.0.
+  updater as FORECAST-SW version 1.0.
+- The species-data updater provides a larger minimum font, high-DPI-aware
+  scaling, expanded table rows and controls, a four-step workflow guide, and
+  visually distinct primary and destructive actions for improved readability.
 - Equation strings are evaluated through an abstract-syntax-tree allowlist;
   Python `eval` is not used.
 - A tracked regression suite verifies the scientific core, data-library

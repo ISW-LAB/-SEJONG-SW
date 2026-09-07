@@ -1,6 +1,6 @@
 cff-version: 1.2.0
-message: "If you use FOCA-SW in research, please cite the accompanying SoftwareX article and this software release."
-title: "FOCA-SW: Forest Carbon Estimation and Scenario Analysis Software for Restoration Sites"
+message: "If you use FORECAST-SW in research, please cite the accompanying SoftwareX article and this software release."
+title: "FORECAST-SW: Forest Carbon Estimation and Scenario Analysis Software for Restoration Sites"
 type: software
 version: 1.0
 date-released: 2026-09-07

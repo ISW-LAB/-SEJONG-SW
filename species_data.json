@@ -1,7 +1,7 @@
 {
   "_schema": {
     "version": "2.0",
-    "description": "FOCA-SW 통합 수종 데이터 (교목·관목·국내·국외).",
+    "description": "FORECAST-SW 통합 수종 데이터 (교목·관목·국내·국외).",
     "license": "KOGL Type 1 (Attribution)",
     "license_file": "DATA_LICENSE.md",
     "carbon1_array": [

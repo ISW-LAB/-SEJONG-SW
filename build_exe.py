@@ -43,7 +43,7 @@ from release_metadata import write_windows_version_info
 
 HERE      = Path(__file__).resolve().parent
 ENTRY     = HERE / "main.py"
-APP_NAME  = "FOCA-SW"
+APP_NAME  = "FORECAST-SW"
 REQ_FILE  = HERE / "requirements.txt"
 
 # ── 플랫폼별 venv 레이아웃 / 실행파일 확장자 ──────────────────────────────
@@ -398,7 +398,7 @@ def _write_spec(onedir: bool, debug: bool, upx: bool) -> Path:
         spec_dir,
         internal_name=APP_NAME,
         original_filename=f"{APP_NAME}{_EXE_EXT}",
-        file_description="FOCA-SW forest carbon estimation and scenario analysis",
+        file_description="FORECAST-SW forest carbon estimation and scenario analysis",
     )
     version_line = f"version={repr(str(version_file))}," if version_file else "# version=None"
 

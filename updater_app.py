@@ -3,7 +3,7 @@
 """
 수종 데이터 업데이터 (자체 완결형).
 
-이 프로그램은 **FOCA-SW(main.py)의 전체 코드 로직을 내부에 내장**하고
+이 프로그램은 **FORECAST-SW(main.py)의 전체 코드 로직을 내부에 내장**하고
 있어, 소스 폴더 없이 이 exe 하나만으로 새 수종 데이터(JSON)를 반영한 실행파일을
 만들 수 있다.
 
@@ -12,10 +12,10 @@
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 [① exe 재빌드 — 자체 완결]  통합 species_data.json 을 입력받아,
    내장된 소스(carbon_calculator + main.py + build_exe.py)를 임시 작업폴더로
-   풀고 그 안에 JSON 을 넣은 뒤 PyInstaller 로 새 FOCA-SW.exe 를 빌드한다.
+   풀고 그 안에 JSON 을 넣은 뒤 PyInstaller 로 새 FORECAST-SW.exe 를 빌드한다.
    → 소스 트리를 옆에 둘 필요 없음. (단, PC 에 Python 3.10+ 이 있어야 컴파일 가능)
 
-[② JSON 적용 — Python 불필요]  기존 FOCA-SW.exe 옆에 JSON 을 복사만 한다.
+[② JSON 적용 — Python 불필요]  기존 FORECAST-SW.exe 옆에 JSON 을 복사만 한다.
    다음 실행 시 자동 반영. 재빌드가 필요 없을 때 가장 빠른 경로.
 
 JSON 양식:  species_data.json (통합본 — 교목·관목·국내·국외 4개 섹션)
@@ -39,7 +39,7 @@ from PyQt5.QtCore import QThread, pyqtSignal, Qt
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (
     QAbstractItemView, QSizePolicy, QApplication, QCheckBox, QComboBox, QDialog, QDialogButtonBox,
-    QFileDialog, QGroupBox, QHBoxLayout, QLabel, QLineEdit, QMainWindow, QMessageBox,
+    QFileDialog, QGroupBox, QHBoxLayout, QHeaderView, QLabel, QLineEdit, QMainWindow, QMessageBox,
     QPlainTextEdit, QPushButton, QScrollArea, QTabWidget, QTableWidget, QTableWidgetItem,
     QVBoxLayout, QWidget,
 )
@@ -48,7 +48,7 @@ from carbon_calculator.equation_eval import evaluate as _safe_equation_evaluate
 from carbon_calculator.version import __version__
 
 # ── 표시 언어 ────────────────────────────────────────────────────────────
-# 이 앱은 표시문자열에 자체 대응표를 사용한다. 수식 검증은 FOCA-SW와 같은
+# 이 앱은 표시문자열에 자체 대응표를 사용한다. 수식 검증은 FORECAST-SW와 같은
 # 허용목록 기반 평가기를 공유한다. 언어 설정은 같은 QSettings 키를 공유해
 # 두 앱의 표시 언어가 함께 움직인다. 기존 설치의 설정 호환성을 위해 키는 유지한다.
 _SETTINGS_ORG = "SejongArboretum"
@@ -56,8 +56,8 @@ _SETTINGS_APP = "CarbonStorageModule"
 _SETTINGS_KEY = "language"
 
 _EN: dict[str, str] = {
-    "수종 데이터 업데이터 (자체 완결형) - FOCA-SW v{version}":
-        "Species Data Updater (self-contained) - FOCA-SW v{version}",
+    "수종 데이터 업데이터 (자체 완결형) - FORECAST-SW v{version}":
+        "Species Data Updater (self-contained) - FORECAST-SW v{version}",
     "수종 데이터 JSON (통합 species_data.json)":
         "Species data JSON (combined species_data.json)",
     "— 파일을 선택하면 검증됩니다": "— select a file to validate it",
@@ -66,8 +66,8 @@ _EN: dict[str, str] = {
     "폴더...": "Folder...",
     "파일/폴더 경로를 선택하거나 직접 입력하세요":
         "Choose a file or folder, or type a path",
-    "① exe 재빌드   —   내장 소스로 새 FOCA-SW.exe 생성 (권장)":
-        "① Rebuild executable — build a new FOCA-SW executable from the bundled "
+    "① exe 재빌드   —   내장 소스로 새 FORECAST-SW.exe 생성 (권장)":
+        "① Rebuild executable — build a new FORECAST-SW executable from the bundled "
         "sources (recommended)",
     "이 업데이터에 내장된 전체 코드 로직을 사용해 JSON 이 반영된 새 exe 를 만듭니다. "
     "소스 폴더가 옆에 없어도 됩니다.\n"
@@ -91,23 +91,23 @@ _EN: dict[str, str] = {
     "출력 폴더를 지정하세요.": "Specify an output folder.",
     "② JSON 적용   —   기존 exe 옆에 복사만 (Python 불필요)":
         "② Apply JSON — copy it next to an existing executable (no Python required)",
-    "이미 만들어진 FOCA-SW.exe 가 있다면, 그 옆에 JSON 을 복사해 "
+    "이미 만들어진 FORECAST-SW.exe 가 있다면, 그 옆에 JSON 을 복사해 "
     "다음 실행 시 즉시 반영합니다. 재빌드가 필요 없을 때 사용하세요.":
         "If a built executable already exists, the JSON is copied next to it and takes "
         "effect the next time it runs. Use this when a rebuild is unnecessary.",
-    "FOCA-SW.exe 위치": "Location of the FOCA-SW executable",
+    "FORECAST-SW.exe 위치": "Location of the FORECAST-SW executable",
     "찾기...": "Browse...",
     "JSON 적용 (복사)": "Apply JSON (copy)",
     "완료 — JSON 복사됨": "Done — JSON copied",
     "JSON 검증에 실패했습니다 (상단 상태 확인).":
         "JSON validation failed (see the status above).",
-    "FOCA-SW.exe 위치를 선택하세요.":
-        "Select the location of the FOCA-SW executable.",
+    "FORECAST-SW.exe 위치를 선택하세요.":
+        "Select the location of the FORECAST-SW executable.",
     "로그": "Log",
     "통합 species_data.json 선택": "Select the combined species_data.json",
     "JSON 파일 (*.json)": "JSON file (*.json)",
     "출력 폴더 선택": "Select output folder",
-    "FOCA-SW.exe 선택": "Select the FOCA-SW executable",
+    "FORECAST-SW.exe 선택": "Select the FORECAST-SW executable",
     "실행 파일 (*.exe)": "Executable (*.exe)",
     # 검증 결과
     "JSON 파싱 오류: {error}": "JSON parse error: {error}",
@@ -137,8 +137,8 @@ _EN: dict[str, str] = {
     "[실패] {error}": "[Failed] {error}",
     "[완료] {name} → {path}": "[Done] {name} → {path}",
     "[정리] 구버전 JSON 제거: {names}": "[Cleanup] removed legacy JSON: {names}",
-    "FOCA-SW.exe 를 다시 실행하면 새 수종 데이터가 적용됩니다.":
-        "Restart FOCA-SW to load the new species data.",
+    "FORECAST-SW.exe 를 다시 실행하면 새 수종 데이터가 적용됩니다.":
+        "Restart FORECAST-SW to load the new species data.",
     # 언어 선택
     "언어 / Language": "Language",
     "한국어": "한국어",
@@ -204,6 +204,13 @@ _EN: dict[str, str] = {
         "Yes = save then continue · No = continue with the file as it is on disk · Cancel = stop",
     "편집 중인 내용을 버리고 새 파일을 불러올까요?": "Discard the current edits and load the new file?",
     "화면 배율": "Zoom",
+    "수종 데이터 업데이터": "Species Data Updater",
+    "JSON을 열고 수종·계수를 검토한 뒤 저장하여 FORECAST-SW에 적용합니다.":
+        "Open the JSON, review species and coefficients, then save and apply it to FORECAST-SW.",
+    "작업 순서: 1. JSON 열기  →  2. 수종·계수 편집  →  3. 저장·검증  →  4. exe 재빌드 또는 JSON 적용":
+        "Workflow: 1. Open JSON  →  2. Edit species and coefficients  →  "
+        "3. Save and validate  →  4. Rebuild the executable or apply JSON",
+    "화면 배율을 조정합니다": "Adjust the interface zoom.",
 }
 
 
@@ -242,9 +249,11 @@ def tr(text: str) -> str:
 #  - 여기에 사용자가 고른 "화면 배율"(85~130%) 을 곱한다. 배율은 QSettings 에 저장.
 _REF_W, _REF_H = 1920, 1080
 _SCALE_MIN, _SCALE_MAX = 0.70, 1.50
-_FONT_DELTA = 3                 # 기준 해상도에서 기본 폰트에 더할 pt (표가 많아 본 프로그램보다 소폭 작게)
+_FONT_DELTA = 4                 # 기준 해상도에서 OS 기본값보다 4pt 크게 표시
+_FONT_MIN_PT = 10               # 작은 화면에서도 편집 텍스트가 10pt 아래로 축소되지 않음
 _SETTINGS_KEY_ZOOM = "updater_zoom"
-_ZOOM_CHOICES = ((0.85, "85%"), (1.0, "100%"), (1.15, "115%"), (1.3, "130%"))
+_ZOOM_CHOICES = ((0.85, "85%"), (1.0, "100%"), (1.15, "115%"),
+                 (1.3, "130%"), (1.45, "145%"))
 _UI_SCALE = 1.0
 _ZOOM = 1.0
 
@@ -330,12 +339,116 @@ def _apply_app_font(app: QApplication) -> None:
         _BASE_PT = f.pointSize() if f.pointSize() > 0 else 9
     if "Malgun" not in f.family() and "맑은" not in f.family():
         f.setFamily("Malgun Gothic")
-    f.setPointSize(max(8, round((_BASE_PT + _FONT_DELTA) * _UI_SCALE)))
+    f.setPointSize(max(_FONT_MIN_PT, round((_BASE_PT + _FONT_DELTA) * _UI_SCALE)))
     app.setFont(f)
 
 
-def _fit_window(win: QWidget, wfrac: float = 0.86, hfrac: float = 0.88,
-                min_w: int = 1000, min_h: int = 640) -> None:
+def _apply_readability_theme(app: QApplication) -> None:
+    """큰 글꼴에서도 경계, 상태, 동작 우선순위가 명확한 편집기 테마를 적용한다."""
+    app.setStyle("Fusion")
+    app.setStyleSheet(f"""
+        QMainWindow, QScrollArea, QWidget#updaterRoot {{
+            background: #F4F7F5;
+        }}
+        QLabel {{ color: #24342B; }}
+        QLabel#pageTitle {{
+            color: #195C39;
+            font-size: {_pt(18)}pt;
+            font-weight: 700;
+        }}
+        QLabel#pageSubtitle {{ color: #4F6257; font-size: {_pt(10)}pt; }}
+        QLabel#workflowHint {{
+            color: #315C45;
+            background: #EAF4EE;
+            border: 1px solid #BCD6C6;
+            border-radius: {_px(6)}px;
+            padding: {_px(7)}px {_px(10)}px;
+            font-size: {_pt(10)}pt;
+        }}
+        QGroupBox {{
+            background: #FFFFFF;
+            border: 1px solid #C7D4CC;
+            border-radius: {_px(8)}px;
+            margin-top: {_px(16)}px;
+            padding-top: {_px(9)}px;
+            font-weight: 600;
+            color: #244E37;
+        }}
+        QGroupBox::title {{
+            subcontrol-origin: margin;
+            left: {_px(12)}px;
+            padding: 0 {_px(6)}px;
+        }}
+        QLineEdit, QComboBox, QPlainTextEdit, QTableWidget {{
+            background: #FFFFFF;
+            border: 1px solid #AEBEB4;
+            border-radius: {_px(4)}px;
+            selection-background-color: #CFE6D7;
+            selection-color: #173325;
+        }}
+        QLineEdit, QComboBox {{
+            min-height: {_px(32)}px;
+            padding: {_px(3)}px {_px(8)}px;
+        }}
+        QLineEdit:focus, QComboBox:focus, QPlainTextEdit:focus, QTableWidget:focus {{
+            border: 2px solid #2E7D52;
+        }}
+        QPushButton {{
+            min-height: {_px(34)}px;
+            padding: {_px(5)}px {_px(13)}px;
+            border: 1px solid #9FB1A6;
+            border-radius: {_px(5)}px;
+            background: #F8FAF9;
+            color: #24342B;
+        }}
+        QPushButton:hover {{ background: #EAF4EE; border-color: #4E8B67; }}
+        QPushButton:pressed {{ background: #D9EADF; }}
+        QPushButton:disabled {{ color: #8B9690; background: #EEF1EF; border-color: #D3DAD6; }}
+        QPushButton#primaryAction {{
+            background: #246B43;
+            color: white;
+            border-color: #1C5736;
+            font-weight: 700;
+        }}
+        QPushButton#primaryAction:hover {{ background: #2F7E51; }}
+        QPushButton#destructiveAction {{ color: #9A2E2E; border-color: #D7AAAA; }}
+        QTabWidget::pane {{ border: 1px solid #B8C8BE; background: white; }}
+        QTabBar::tab {{
+            background: #E9EFEB;
+            border: 1px solid #C2CFC7;
+            padding: {_px(8)}px {_px(15)}px;
+            min-height: {_px(24)}px;
+        }}
+        QTabBar::tab:selected {{
+            background: #FFFFFF;
+            color: #1E6941;
+            font-weight: 700;
+            border-bottom-color: #FFFFFF;
+        }}
+        QHeaderView::section {{
+            background: #E8F1EB;
+            color: #244E37;
+            border: 0;
+            border-right: 1px solid #C7D4CC;
+            border-bottom: 1px solid #AEBEB4;
+            padding: {_px(6)}px {_px(8)}px;
+            font-weight: 700;
+        }}
+        QTableWidget {{ gridline-color: #D6DFD9; alternate-background-color: #F6FAF7; }}
+        QTableWidget::item {{ padding: {_px(4)}px {_px(6)}px; }}
+        QCheckBox {{ spacing: {_px(7)}px; }}
+        QCheckBox::indicator {{ width: {_px(18)}px; height: {_px(18)}px; }}
+        QToolTip {{
+            background: #24342B;
+            color: white;
+            border: 1px solid #24342B;
+            padding: {_px(5)}px;
+        }}
+    """)
+
+
+def _fit_window(win: QWidget, wfrac: float = 0.92, hfrac: float = 0.92,
+                min_w: int = 1080, min_h: int = 700) -> None:
     """창을 화면 비율로 맞추고 화면을 넘지 않게 클램프한 뒤 중앙에 둔다."""
     geo = _screen_geometry()
     if geo is None:
@@ -368,7 +481,7 @@ def _status_css(color) -> str:
 
 
 def _note_css() -> str:
-    return "color: #555; font-size: %dpt;" % _pt(9)
+    return "color: #4F6257; font-size: %dpt;" % _pt(10)
 
 
 _IS_EXE = hasattr(sys, '_MEIPASS')
@@ -388,7 +501,7 @@ JSON_NAME     = "species_data.json"
 # ── 플랫폼별 venv 레이아웃 / 실행파일 확장자 ──────────────────────────────
 _VENV_BIN     = "Scripts" if os.name == "nt" else "bin"
 _EXE_EXT      = ".exe" if os.name == "nt" else ""
-MAIN_APP_NAME = "FOCA-SW"
+MAIN_APP_NAME = "FORECAST-SW"
 MAIN_EXE_NAME = f"{MAIN_APP_NAME}{_EXE_EXT}"
 
 # 작업폴더로 복사할 때 제외할 항목
@@ -416,7 +529,7 @@ def _find_python() -> Path | None:
 
 
 def _auto_find_main_exe() -> Path | None:
-    """FOCA-SW.exe 를 자동 탐색 (현재 폴더 / dist/)."""
+    """FORECAST-SW.exe 를 자동 탐색 (현재 폴더 / dist/)."""
     for candidate in [
         HERE / MAIN_EXE_NAME,
         HERE / "dist" / MAIN_EXE_NAME,
@@ -562,13 +675,16 @@ class FilePickRow(QWidget):
             btn_label = tr("열기...")
         layout = QHBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(_px(8))
         self.label_w = QLabel(label)
         # 라벨 폭은 폰트 크기에 따라 창이 계산해 넘긴다(큰 배율에서 글자가 잘리지 않도록)
         self.label_w.setFixedWidth(label_width or _px(215))
         self.edit = QLineEdit()
         self.edit.setPlaceholderText(tr("파일/폴더 경로를 선택하거나 직접 입력하세요"))
+        self.edit.setClearButtonEnabled(True)
         self.btn = QPushButton(btn_label)
-        self.btn.setFixedWidth(_px(75))
+        button_w = self.btn.fontMetrics().horizontalAdvance(btn_label) + _px(28)
+        self.btn.setMinimumWidth(max(_px(92), button_w))
         layout.addWidget(self.label_w)
         layout.addWidget(self.edit)
         layout.addWidget(self.btn)
@@ -678,9 +794,9 @@ def _tidy_columns(t: QTableWidget) -> None:
     """내용 기준으로 열 폭을 잡되, 긴 식/경로 열은 상한을 두어 다른 열이 밀리지 않게 한다."""
     t.resizeColumnsToContents()
     cap = _px(420)
+    floor = _px(88)
     for c in range(t.columnCount()):
-        if t.columnWidth(c) > cap:
-            t.setColumnWidth(c, cap)
+        t.setColumnWidth(c, max(floor, min(t.columnWidth(c), cap)))
 
 
 def _mk_item(text: str, editable: bool = True) -> QTableWidgetItem:
@@ -724,9 +840,15 @@ class SpeciesEditor(QGroupBox):
             t.setEditTriggers(QAbstractItemView.DoubleClicked | QAbstractItemView.EditKeyPressed
                               | QAbstractItemView.AnyKeyPressed)
             t.setAlternatingRowColors(True)
-            t.verticalHeader().setDefaultSectionSize(_px(26))
+            t.setWordWrap(False)
+            t.setTextElideMode(Qt.ElideRight)
+            t.verticalHeader().setDefaultSectionSize(_px(34))
+            t.verticalHeader().setMinimumSectionSize(_px(32))
+            t.horizontalHeader().setMinimumHeight(_px(38))
+            t.horizontalHeader().setMinimumSectionSize(_px(74))
+            t.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
             t.horizontalHeader().setStretchLastSection(True)
-            t.setMinimumHeight(_px(170))
+            t.setMinimumHeight(_px(250))
             t.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
             t.itemChanged.connect(self._on_item_changed)
             self.tables[section] = t
@@ -743,6 +865,7 @@ class SpeciesEditor(QGroupBox):
         row = QHBoxLayout()
         self.add_btn = QPushButton(tr("+ 새 수종 추가"))
         self.del_btn = QPushButton(tr("선택 삭제"))
+        self.del_btn.setObjectName("destructiveAction")
         self.add_btn.clicked.connect(self.add_row)
         self.del_btn.clicked.connect(self.delete_selected)
         row.addWidget(self.add_btn)
@@ -753,6 +876,8 @@ class SpeciesEditor(QGroupBox):
         status_row = QHBoxLayout()
         self.status = QLabel("")
         self.save_btn = QPushButton(tr("JSON 파일로 저장"))
+        self.save_btn.setObjectName("primaryAction")
+        self.save_btn.setMinimumWidth(_px(190))
         self.save_btn.clicked.connect(self.save_requested.emit)
         status_row.addWidget(self.status)
         status_row.addStretch(1)
@@ -1093,7 +1218,7 @@ class UpdaterWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(
-            tr("수종 데이터 업데이터 (자체 완결형) - FOCA-SW v{version}")
+            tr("수종 데이터 업데이터 (자체 완결형) - FORECAST-SW v{version}")
             .format(version=__version__)
         )
         self.setMinimumWidth(960)
@@ -1121,6 +1246,7 @@ class UpdaterWindow(QMainWindow):
         _save_zoom(zoom)
         _set_ui_scale(zoom)
         _apply_app_font(QApplication.instance())
+        _apply_readability_theme(QApplication.instance())
         self._rebuild_ui()
         _fit_window(self)
 
@@ -1130,7 +1256,7 @@ class UpdaterWindow(QMainWindow):
                 self.exe_row.edit.text(), self._out_user_edited)
         snap = self.editor.snapshot()
         self.setWindowTitle(
-            tr("수종 데이터 업데이터 (자체 완결형) - FOCA-SW v{version}")
+            tr("수종 데이터 업데이터 (자체 완결형) - FORECAST-SW v{version}")
             .format(version=__version__)
         )
         old = self.centralWidget()
@@ -1148,42 +1274,64 @@ class UpdaterWindow(QMainWindow):
 
     def _setup_ui(self):
         root = QWidget()
+        root.setObjectName("updaterRoot")
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QScrollArea.NoFrame)
         scroll.setWidget(root)
         self.setCentralWidget(scroll)
         v = QVBoxLayout(root)
-        v.setSpacing(_px(10))
-        v.setContentsMargins(_px(12), _px(12), _px(12), _px(12))
+        v.setSpacing(_px(14))
+        v.setContentsMargins(_px(18), _px(16), _px(18), _px(18))
 
-        # ── 언어 (본 프로그램과 설정을 공유) ─────────────────────────
-        lang_row = QHBoxLayout()
-        lang_row.addStretch(1)
-        lang_row.addWidget(QLabel(tr("언어 / Language")))
+        # ── 화면 제목·작업 안내·표시 설정 ────────────────────────────
+        header_row = QHBoxLayout()
+        header_row.setSpacing(_px(20))
+        brand = QVBoxLayout()
+        brand.setSpacing(_px(3))
+        page_title = QLabel(tr("수종 데이터 업데이터"))
+        page_title.setObjectName("pageTitle")
+        page_subtitle = QLabel(tr("JSON을 열고 수종·계수를 검토한 뒤 저장하여 FORECAST-SW에 적용합니다."))
+        page_subtitle.setObjectName("pageSubtitle")
+        page_subtitle.setWordWrap(True)
+        brand.addWidget(page_title)
+        brand.addWidget(page_subtitle)
+        header_row.addLayout(brand, 1)
+
+        settings_row = QHBoxLayout()
+        settings_row.setSpacing(_px(8))
+        settings_row.addWidget(QLabel(tr("언어 / Language")))
         self.lang_combo = QComboBox()
         self.lang_combo.addItem("한국어", "ko")
         self.lang_combo.addItem("English", "en")
         self.lang_combo.setCurrentIndex(1 if _LANG == "en" else 0)
-        self.lang_combo.setFixedWidth(_px(140))
+        self.lang_combo.setMinimumWidth(_px(150))
         self.lang_combo.currentIndexChanged.connect(self._on_language_changed)
-        lang_row.addWidget(self.lang_combo)
-        lang_row.addSpacing(_px(16))
-        lang_row.addWidget(QLabel(tr("화면 배율")))
+        settings_row.addWidget(self.lang_combo)
+        settings_row.addSpacing(_px(10))
+        settings_row.addWidget(QLabel(tr("화면 배율")))
         self.zoom_combo = QComboBox()
         for z, label in _ZOOM_CHOICES:
             self.zoom_combo.addItem(label, z)
         idx = min(range(len(_ZOOM_CHOICES)), key=lambda i: abs(_ZOOM_CHOICES[i][0] - _ZOOM))
         self.zoom_combo.setCurrentIndex(idx)
-        self.zoom_combo.setFixedWidth(_px(90))
+        self.zoom_combo.setMinimumWidth(_px(100))
+        self.zoom_combo.setToolTip(tr("화면 배율을 조정합니다"))
         self.zoom_combo.currentIndexChanged.connect(self._on_zoom_changed)
-        lang_row.addWidget(self.zoom_combo)
-        v.addLayout(lang_row)
+        settings_row.addWidget(self.zoom_combo)
+        header_row.addLayout(settings_row)
+        v.addLayout(header_row)
+
+        workflow_hint = QLabel(
+            tr("작업 순서: 1. JSON 열기  →  2. 수종·계수 편집  →  3. 저장·검증  →  4. exe 재빌드 또는 JSON 적용"))
+        workflow_hint.setObjectName("workflowHint")
+        workflow_hint.setWordWrap(True)
+        v.addWidget(workflow_hint)
 
         # 세 경로 행의 라벨 폭을 현재 폰트로 잰 가장 긴 라벨에 맞춘다 (배율이 커져도 잘리지 않음)
         global _STATUS_INDENT
         fm = self.fontMetrics()
-        _label_texts = ("species_data.json", tr("출력 폴더 (exe 저장 위치)"), tr("FOCA-SW.exe 위치"))
+        _label_texts = ("species_data.json", tr("출력 폴더 (exe 저장 위치)"), tr("FORECAST-SW.exe 위치"))
         self._label_w = max(_px(215), max(fm.horizontalAdvance(t) for t in _label_texts) + _px(16))
         _STATUS_INDENT = self._label_w + _px(8)
 
@@ -1206,7 +1354,7 @@ class UpdaterWindow(QMainWindow):
         v.addWidget(self.editor, 3)
 
         # ── ① exe 재빌드 (자체 완결) ───────────────────────────────
-        build_grp = QGroupBox(tr("① exe 재빌드   —   내장 소스로 새 FOCA-SW.exe 생성 (권장)"))
+        build_grp = QGroupBox(tr("① exe 재빌드   —   내장 소스로 새 FORECAST-SW.exe 생성 (권장)"))
         build_grp.setStyleSheet("QGroupBox { font-weight: bold; }")
         bl = QVBoxLayout(build_grp)
 
@@ -1234,7 +1382,8 @@ class UpdaterWindow(QMainWindow):
         bl.addLayout(opt_row)
 
         self.build_btn = QPushButton(tr("새 exe 빌드 (PyInstaller)"))
-        self.build_btn.setFixedHeight(_px(42))
+        self.build_btn.setObjectName("primaryAction")
+        self.build_btn.setFixedHeight(_px(48))
         f = self.build_btn.font(); f.setBold(True)   # 크기는 앱 폰트(스케일 적용)를 그대로 따른다
         self.build_btn.setFont(f)
         self.build_btn.clicked.connect(self._start_build)
@@ -1249,13 +1398,13 @@ class UpdaterWindow(QMainWindow):
         apply_grp = QGroupBox(tr("② JSON 적용   —   기존 exe 옆에 복사만 (Python 불필요)"))
         al = QVBoxLayout(apply_grp)
         _anote = QLabel(
-            tr("이미 만들어진 FOCA-SW.exe 가 있다면, 그 옆에 JSON 을 복사해 "
+            tr("이미 만들어진 FORECAST-SW.exe 가 있다면, 그 옆에 JSON 을 복사해 "
             "다음 실행 시 즉시 반영합니다. 재빌드가 필요 없을 때 사용하세요."))
         _anote.setStyleSheet(_note_css())
         _anote.setWordWrap(True)
         al.addWidget(_anote)
 
-        self.exe_row = FilePickRow(tr("FOCA-SW.exe 위치"), tr("찾기..."), label_width=self._label_w)
+        self.exe_row = FilePickRow(tr("FORECAST-SW.exe 위치"), tr("찾기..."), label_width=self._label_w)
         self.exe_row.btn.clicked.connect(self._pick_exe)
         self.exe_row.edit.textChanged.connect(self._recheck_exe)
         self.exe_status = QLabel("")
@@ -1265,7 +1414,8 @@ class UpdaterWindow(QMainWindow):
         al.addWidget(self.exe_status)
 
         self.apply_btn = QPushButton(tr("JSON 적용 (복사)"))
-        self.apply_btn.setFixedHeight(_px(36))
+        self.apply_btn.setObjectName("primaryAction")
+        self.apply_btn.setFixedHeight(_px(42))
         self.apply_btn.clicked.connect(self._apply_json)
         al.addWidget(self.apply_btn)
 
@@ -1279,8 +1429,8 @@ class UpdaterWindow(QMainWindow):
         ll = QVBoxLayout(log_grp)
         self.log = QPlainTextEdit()
         self.log.setReadOnly(True)
-        self.log.setFont(QFont("Consolas", _pt(9)))
-        self.log.setMinimumHeight(_px(150))
+        self.log.setFont(QFont("Consolas", _pt(10)))
+        self.log.setMinimumHeight(_px(180))
         ll.addWidget(self.log)
         v.addWidget(log_grp, 1)
 
@@ -1343,7 +1493,7 @@ class UpdaterWindow(QMainWindow):
 
     def _pick_exe(self):
         path, _ = QFileDialog.getOpenFileName(
-            self, tr("FOCA-SW.exe 선택"), str(HERE), tr("실행 파일 (*.exe)"))
+            self, tr("FORECAST-SW.exe 선택"), str(HERE), tr("실행 파일 (*.exe)"))
         if path:
             self.exe_row.edit.setText(path)
 
@@ -1427,7 +1577,7 @@ class UpdaterWindow(QMainWindow):
 
         exe_path = self.exe_row.path
         if not exe_path or not exe_path.exists():
-            self.apply_status.setText(tr("FOCA-SW.exe 위치를 선택하세요."))
+            self.apply_status.setText(tr("FORECAST-SW.exe 위치를 선택하세요."))
             self.apply_status.setStyleSheet("color: red;")
             return
 
@@ -1452,7 +1602,7 @@ class UpdaterWindow(QMainWindow):
             self.log.appendPlainText(
                 tr("[정리] 구버전 JSON 제거: {names}").format(names=", ".join(removed)))
         self.log.appendPlainText("")
-        self.log.appendPlainText(tr("FOCA-SW.exe 를 다시 실행하면 새 수종 데이터가 적용됩니다."))
+        self.log.appendPlainText(tr("FORECAST-SW.exe 를 다시 실행하면 새 수종 데이터가 적용됩니다."))
         self.apply_status.setText(tr("완료 — JSON 복사됨"))
         self.apply_status.setStyleSheet("color: green;")
 
@@ -1542,6 +1692,7 @@ def main():
     _LANG = _current_language()          # 본 프로그램에서 고른 언어를 그대로 따른다
     _set_ui_scale(_load_zoom())          # 모니터 크기 × 저장된 배율
     _apply_app_font(app)
+    _apply_readability_theme(app)
     win = UpdaterWindow()
     _fit_window(win)                     # 화면 비율로 크기·중앙 배치 (화면 초과 방지)
     win.show()

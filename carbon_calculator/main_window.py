@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MIT
 # -*- coding: utf-8 -*-
 """
-FOCA-SW - PyQt5 메인 윈도우.
+FORECAST-SW - PyQt5 메인 윈도우.
 
 레이아웃:
 - 좌측: TabWidget 2개 (교목 / 관목)
@@ -499,7 +499,7 @@ class MainWindow(QMainWindow):
                  region_name: str = "", area_w: int = 0, area_h: int = 0):
         super().__init__()
         self.setWindowTitle(
-            tr("FOCA-SW (Ver. {version} - Python)").format(version=__version__)
+            tr("FORECAST-SW (Ver. {version} - Python)").format(version=__version__)
         )
         # 창 크기는 combined_window(통합 실행 진입점 main.py) 에서 설정.
         # centralWidget 만 사용되므로 이 창 자체의 크기는 영향 없음.

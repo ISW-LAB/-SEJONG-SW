@@ -1,6 +1,6 @@
 # Scientific-data licence
 
-The FOCA-SW source code, build scripts, documentation, and repository figures
+The FORECAST-SW source code, build scripts, documentation, and repository figures
 are distributed under the MIT License in `LICENSE`.
 
 The scientific equation library in `species_data.json`, including its curated
@@ -10,7 +10,7 @@ Korea Open Government License (KOGL) Type 1 (Attribution).
 
 ## KOGL Type 1 attribution notice
 
-- Work: FOCA-SW scientific equation library (`species_data.json`)
+- Work: FORECAST-SW scientific equation library (`species_data.json`)
 - Copyright holder and source: Sejong National Arboretum, Korea Arboreta and
   Gardens Institute
 - Licence: Korea Open Government License Type 1 (Attribution)

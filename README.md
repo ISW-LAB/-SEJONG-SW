@@ -1,9 +1,9 @@
-# FOCA-SW - 산림복원지 탄소추정 및 시나리오 분석 소프트웨어
+# FORECAST-SW - 산림복원지 탄소추정 및 시나리오 분석 소프트웨어
 
 > English version: [README.en.md](README.en.md)
 
 MATLAB App Designer 원본(`Carbon_251002_5.mlapp` / `Carbon2_251013_1.mlapp`)을 Python(PyQt5)으로
-포팅한 프로젝트. **FOCA-SW**(핵심 소프트웨어)와, 수종 데이터를 갱신·재빌드하는
+포팅한 프로젝트. **FORECAST-SW**(핵심 소프트웨어)와, 수종 데이터를 갱신·재빌드하는
 **수종데이터업데이터** 두 개의 실행파일을 만든다.
 
 버전 1.0의 과학 라이브러리는 사용자 인터페이스에서 직접 사용하는 범위와 호환성 범위를
@@ -21,7 +21,7 @@ MATLAB App Designer 원본(`Carbon_251002_5.mlapp` / `Carbon2_251013_1.mlapp`)�
 ```
 Code/
 ├── main.py                 ← 실행 진입점 (Carbon1·Carbon2 통합 탭 창)
-├── build_exe.py             ← 핵심 소프트웨어 빌드 스크립트 (main.py → FOCA-SW.exe)
+├── build_exe.py             ← 핵심 소프트웨어 빌드 스크립트 (main.py → FORECAST-SW.exe)
 ├── build_updater.py         ← 업데이터 빌드 스크립트 (updater_app.py → 수종데이터업데이터.exe)
 ├── updater_app.py           ← 업데이터 앱 소스 (build_exe.py 로직을 내장 실행)
 ├── updater_빌드.bat         ← build_updater.py 실행 배치 파일 (Windows)
@@ -65,7 +65,7 @@ Carbon1(자생복원종)·Carbon2(국내·국외 통합)를 하나의 창에서 
 
 ---
 
-## 2. 핵심 소프트웨어(FOCA-SW) 빌드
+## 2. 핵심 소프트웨어(FORECAST-SW) 빌드
 
 ```powershell
 python build_exe.py              # onefile (단일 exe, 배포 용이) — 기본
@@ -76,7 +76,7 @@ python build_exe.py --clean-cache        # 빌드 전 build/, dist/ 삭제 후 �
 python build_exe.py --rebuild-venv       # 빌드 전용 venv 강제 재생성
 ```
 
-- 산출물: `dist\FOCA-SW.exe` (onefile) 또는 `dist\FOCA-SW\` (onedir)
+- 산출물: `dist\FORECAST-SW.exe` (onefile) 또는 `dist\FORECAST-SW\` (onedir)
 - `species_data.json` 이 프로젝트 루트에 있으면 빌드 시 함께 동봉되어 실행 시 자동 반영된다.
 - exe 가 실행 직후 꺼지는 등 문제가 있으면 `--debug` 로 다시 빌드해 콘솔 로그를 확인한다.
 
@@ -99,10 +99,12 @@ updater_빌드.bat
   내부에 번들**하고 있어, 소스 폴더 없이 이 exe 하나만 배포해도 동작한다.
 - 배포된 `수종데이터업데이터.exe` 는 실행 즉시 `species_data.json` 을 **표로 열어 편집**할 수 있다
   (교목·관목·국내·국외 4개 탭, 셀 더블클릭 수정, 수종 추가/삭제,
-  저장 전 검증, 저장 시 `.bak` 백업). 편집 후에는 두 가지 방식으로 반영한다:
+  저장 전 검증, 저장 시 `.bak` 백업). 큰 기본 글꼴과 고해상도 화면 배율, 확장된 표 행과
+  입력 컨트롤, 4단계 작업 안내, 색상으로 구분된 주요 동작을 제공한다. 편집 후에는 두 가지
+  방식으로 반영한다:
   1. **exe 재빌드** — 새 `species_data.json` 을 입력받아 내장 소스로 새
-     `FOCA-SW.exe` 를 다시 빌드 (PC 에 Python 3.10+ 필요)
-  2. **JSON 적용** — 기존 `FOCA-SW.exe` 옆에 `species_data.json` 만 복사
+     `FORECAST-SW.exe` 를 다시 빌드 (PC 에 Python 3.10+ 필요)
+  2. **JSON 적용** — 기존 `FORECAST-SW.exe` 옆에 `species_data.json` 만 복사
      (Python 불필요, 다음 실행부터 즉시 반영)
 
 ---
@@ -111,12 +113,12 @@ updater_빌드.bat
 
 일반 사용자 배포용으로 설치·시작메뉴·제거 기능이 있는 설치 프로그램을 만들고 싶다면:
 
-1. `python build_exe.py --onedir` 로 폴더형 빌드 (`dist\FOCA-SW\` 생성)
+1. `python build_exe.py --onedir` 로 폴더형 빌드 (`dist\FORECAST-SW\` 생성)
 2. [Inno Setup 6](https://jrsoftware.org/isdl.php) 설치
 3. 다음 중 하나로 컴파일:
    - Inno Setup Compiler 에서 `installer.iss` 열고 `Build > Compile`
    - 명령줄: `"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss`
-4. 산출물: `installer_output\FOCA-SW_Setup_1.0.exe`
+4. 산출물: `installer_output\FORECAST-SW_Setup_1.0.exe`
 
 ---
 

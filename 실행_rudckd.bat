@@ -1,7 +1,7 @@
 REM SPDX-License-Identifier: MIT
 @echo off
 REM ============================================================
-REM  FOCA-SW 실행 (conda)
+REM  FORECAST-SW 실행 (conda)
 REM  - tree-sim 브랜치는 pyvista>=0.48 → Python 3.10+ 환경(rudckd310)이 필요.
 REM  - main 브랜치는 rudckd(3.9)로도 실행된다.
 REM  기본 rudckd310, 없으면 rudckd 로 자동 대체.

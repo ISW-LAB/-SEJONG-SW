@@ -44,13 +44,13 @@ EN: dict[str, str] = {
     "기타": "Other",
 
     # ══════════════════ 메인 창 · 메뉴 ══════════════════
-    "FOCA-SW - 산림복원지 탄소추정 및 시나리오 분석 소프트웨어 (Ver. {version})":
-        "FOCA-SW - Forest Carbon Estimation and Scenario Analysis Software for Restoration Sites (Ver. {version})",
-    "FOCA-SW": "FOCA-SW",
-    "FOCA-SW (Ver. {version} - Python)":
-        "FOCA-SW (Ver. {version} - Python)",
-    "FOCA-SW (Ver. {version} - 탄소저장량 기여도)":
-        "FOCA-SW (Ver. {version} - Species Contribution)",
+    "FORECAST-SW - 산림복원지 탄소추정 및 시나리오 분석 소프트웨어 (Ver. {version})":
+        "FORECAST-SW - Forest Carbon Estimation and Scenario Analysis Software for Restoration Sites (Ver. {version})",
+    "FORECAST-SW": "FORECAST-SW",
+    "FORECAST-SW (Ver. {version} - Python)":
+        "FORECAST-SW (Ver. {version} - Python)",
+    "FORECAST-SW (Ver. {version} - 탄소저장량 기여도)":
+        "FORECAST-SW (Ver. {version} - Species Contribution)",
     "파일(&F)": "&File",
     "통합 Excel 저장(&E)": "&Export combined Excel",
     "종료(&X)": "E&xit",
@@ -67,7 +67,7 @@ EN: dict[str, str] = {
     "지역 종합 분석": "Multi-site comparison",
     "통합 Excel 저장": "Export combined Excel",
     "‘+ 지역 추가’로 지역을 추가하세요.": "Use [+ Add site] to add a site.",
-    "FOCA-SW v{version}": "FOCA-SW v{version}",
+    "FORECAST-SW v{version}": "FORECAST-SW v{version}",
 
     # ══════════════════ 언어 선택 ══════════════════
     "언어 선택 / Language": "Language",
@@ -114,8 +114,8 @@ EN: dict[str, str] = {
         "contribution of native restoration species.\nAfter adding several sites, use "
         "[Multi-site comparison] at the top right to compare total carbon storage.",
 
-    "<b>FOCA-SW (통합 Ver. {version})</b><br><br>":
-        "<b>FOCA-SW (Integrated Ver. {version})</b><br><br>",
+    "<b>FORECAST-SW (통합 Ver. {version})</b><br><br>":
+        "<b>FORECAST-SW (Integrated Ver. {version})</b><br><br>",
     "지역(권역)별로 탭을 동적으로 추가해 각 지역의 <b>탄소저장량 추정 + 수종별 기여도</b>를 "
     "독립적으로 다룹니다.<br>":
         "Sites are added as tabs, each handling its own <b>carbon storage projection "

@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-"""Generate Windows version metadata for FOCA-SW release executables."""
+"""Generate Windows version metadata for FORECAST-SW release executables."""
 
 from __future__ import annotations
 
@@ -50,13 +50,13 @@ VSVersionInfo(
       StringTable(
         '040904B0',
         [
-          StringStruct('CompanyName', 'FOCA-SW contributors'),
+          StringStruct('CompanyName', 'FORECAST-SW contributors'),
           StringStruct('FileDescription', {file_description!r}),
           StringStruct('FileVersion', {__version__!r}),
           StringStruct('InternalName', {internal_name!r}),
-          StringStruct('LegalCopyright', 'Copyright (c) 2026 FOCA-SW contributors'),
+          StringStruct('LegalCopyright', 'Copyright (c) 2026 FORECAST-SW contributors'),
           StringStruct('OriginalFilename', {original_filename!r}),
-          StringStruct('ProductName', 'FOCA-SW'),
+          StringStruct('ProductName', 'FORECAST-SW'),
           StringStruct('ProductVersion', {__version__!r})
         ]
       )

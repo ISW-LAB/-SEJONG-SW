@@ -1,8 +1,8 @@
-# FOCA-SW - Forest Carbon Estimation and Scenario Analysis Software for Restoration Sites
+# FORECAST-SW - Forest Carbon Estimation and Scenario Analysis Software for Restoration Sites
 
 A PyQt5 port of the original MATLAB App Designer application
 (`Carbon_251002_5.mlapp` / `Carbon2_251013_1.mlapp`). The project builds two
-executables: **FOCA-SW** (the core software) and the
+executables: **FORECAST-SW** (the core software) and the
 **species data updater**, which applies a new species dataset and rebuilds the
 core executable.
 
@@ -103,7 +103,7 @@ python build_exe.py --clean-cache        # remove build/ and dist/ first
 python build_exe.py --rebuild-venv       # force re-creation of the build venv
 ```
 
-- Output: `dist/FOCA-SW.exe` (onefile) or `dist/FOCA-SW/` (onedir)
+- Output: `dist/FORECAST-SW.exe` (onefile) or `dist/FORECAST-SW/` (onedir)
 - If `species_data.json` is present in the project root it is bundled into the
   executable and loaded at runtime.
 - Use `--rebuild-venv` whenever `requirements.txt` changes. The build venv is
@@ -132,8 +132,10 @@ updater_빌드.bat
   on its own.
 - On launch it opens `species_data.json` in a **table editor** (four tabs — trees, shrubs,
   domestic, international; double-click cells to edit; add/delete species; validation before
-  saving; a `.bak` backup on save). After editing,
-  it offers two ways to apply the data:
+  saving; a `.bak` backup on save). The interface provides a larger default font,
+  high-DPI-aware scaling, expanded table rows and controls, a four-step workflow guide,
+  and visually distinct primary and destructive actions. After editing, it offers two ways
+  to apply the data:
   1. **Rebuild executable** — takes a new `species_data.json` and rebuilds the core
      executable from the bundled source (requires Python 3.10+ on the machine).
   2. **Apply JSON** — copies `species_data.json` next to an existing executable
@@ -148,7 +150,7 @@ updater_빌드.bat
 3. Compile with either
    - Inno Setup Compiler: open `installer.iss`, then `Build > Compile`, or
    - the command line: `"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss`
-4. Output: `installer_output/FOCA-SW_Setup_1.0.exe`
+4. Output: `installer_output/FORECAST-SW_Setup_1.0.exe`
 
 ---
 

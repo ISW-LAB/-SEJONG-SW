@@ -1,4 +1,4 @@
-# FOCA-SW v1.0 build verification
+# FORECAST-SW v1.0 build verification
 
 Verification date: 2026-09-07 (Asia/Seoul)
 
@@ -14,7 +14,7 @@ Verification date: 2026-09-07 (Asia/Seoul)
 
 1. `python -m unittest discover -s tests -v`: 12 tests passed.
 2. `python build_exe.py --onedir --clean-cache`: completed successfully.
-3. `dist/FOCA-SW/FOCA-SW.exe --lang en`: startup smoke test passed.
+3. `dist/FORECAST-SW/FORECAST-SW.exe --lang en`: startup smoke test passed.
 4. `python build_updater.py`: completed successfully.
 5. `dist/수종데이터업데이터.exe`: startup smoke test passed.
 6. `installer.iss`: compiled successfully with Inno Setup.
@@ -25,9 +25,9 @@ Verification date: 2026-09-07 (Asia/Seoul)
 
 | Artifact | Bytes | SHA-256 |
 |---|---:|---|
-| `dist/FOCA-SW/FOCA-SW.exe` | 13,185,499 | `6C40E0B97958B6BB827FBAAD8D9D8802EB9705957041F54B835C083276FE9B94` |
-| `dist/수종데이터업데이터.exe` | 47,770,068 | `11463FBD28668FDAC2578C0533EE73FACAE928A25CA5ACEFE22FC4D4AED68977` |
-| `installer_output/FOCA-SW_Setup_1.0.exe` | 103,238,418 | `8FDE374BDDF39101A93BB64CE92940D70988372D03DEC696FCAF869FD1F77092` |
+| `dist/FORECAST-SW/FORECAST-SW.exe` | 13,185,536 | `36F5E9F9851AB16C87F4CF133AEF56ACD1F5098A876361F0D22BF9B05AE2276F` |
+| `dist/수종데이터업데이터.exe` | 47,772,242 | `68D4A946F3EDDED61959A439ED920736FDF119CA9B55ADC713C8101F3581133C` |
+| `installer_output/FORECAST-SW_Setup_1.0.exe` | 103,241,446 | `13EFD0C6E0D2367E2F78D859C0E6F675182DDFCBE9C5A54F44013B90E79A1F11` |
 
 The executable and installer are reproducible local build outputs and are not
 tracked in Git. The installer is not Authenticode-signed; users should verify
