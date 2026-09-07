@@ -38,6 +38,8 @@ import sys
 import venv as _venv_mod
 from pathlib import Path
 
+from release_metadata import write_windows_version_info
+
 
 HERE      = Path(__file__).resolve().parent
 ENTRY     = HERE / "main.py"
@@ -348,6 +350,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    __VERSION_LINE__
     __ICON_LINE__
 )
 """
@@ -369,6 +372,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    __VERSION_LINE__
     __ICON_LINE__
 )
 
@@ -389,6 +393,14 @@ def _write_spec(onedir: bool, debug: bool, upx: bool) -> Path:
     """spec 파일을 생성하고 경로를 반환한다."""
     icon = find_icon()
     icon_line = f"icon={repr(str(icon))}," if icon else "# icon=None"
+    spec_dir = HERE / "build"
+    version_file = write_windows_version_info(
+        spec_dir,
+        internal_name=APP_NAME,
+        original_filename=f"{APP_NAME}{_EXE_EXT}",
+        file_description="FOCA-SW forest carbon estimation and scenario analysis",
+    )
+    version_line = f"version={repr(str(version_file))}," if version_file else "# version=None"
 
     analysis = (
         _SPEC_ANALYSIS
@@ -402,10 +414,10 @@ def _write_spec(onedir: bool, debug: bool, upx: bool) -> Path:
         .replace("__APP_NAME__", repr(APP_NAME))
         .replace("__CONSOLE__",  "True" if debug else "False")
         .replace("__UPX__",      "True" if upx else "False")
+        .replace("__VERSION_LINE__", version_line)
         .replace("__ICON_LINE__", icon_line)
     )
 
-    spec_dir = HERE / "build"
     spec_dir.mkdir(parents=True, exist_ok=True)
     spec_path = spec_dir / f"{APP_NAME}.spec"
     spec_path.write_text(analysis + exe_section, encoding="utf-8")

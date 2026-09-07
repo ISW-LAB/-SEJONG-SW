@@ -31,6 +31,8 @@ import sys
 import venv as _venv_mod
 from pathlib import Path
 
+from release_metadata import write_windows_version_info
+
 
 HERE       = Path(__file__).resolve().parent
 ENTRY      = HERE / "updater_app.py"
@@ -62,7 +64,7 @@ def _venv_ready(python: Path) -> bool:
 # 런타임에 _MEIPASS/bundled_src 로 풀려, updater 가 이를 임시 작업폴더로 복사해 빌드한다.
 _BUNDLE_ROOT_FILES = (
     "main.py",
-    "build_exe.py", "requirements.txt",
+    "build_exe.py", "release_metadata.py", "requirements.txt",
     "species_data.json",             # 기본 통합 데이터 (사용자 JSON 이 덮어씀)
 )
 _CC_DIR = HERE / "carbon_calculator"
@@ -326,6 +328,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    __VERSION_LINE__
     __ICON_LINE__
 )
 """
@@ -347,6 +350,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    __VERSION_LINE__
     __ICON_LINE__
 )
 
@@ -366,6 +370,14 @@ coll = COLLECT(
 def _write_spec(onedir: bool, debug: bool, upx: bool) -> Path:
     icon = find_icon()
     icon_line = f"icon={repr(str(icon))}," if icon else "# icon=None"
+    spec_dir = HERE / "build"
+    version_file = write_windows_version_info(
+        spec_dir,
+        internal_name="FOCA-SW-Updater",
+        original_filename=f"{APP_NAME}{_EXE_EXT}",
+        file_description="FOCA-SW scientific-library updater",
+    )
+    version_line = f"version={repr(str(version_file))}," if version_file else "# version=None"
 
     datas = collect_bundled_datas()
     print(f"[bundle] {len(datas)} source files bundled (carbon_calculator + main.py + build_exe.py, ...)")
@@ -383,10 +395,10 @@ def _write_spec(onedir: bool, debug: bool, upx: bool) -> Path:
         .replace("__APP_NAME__",  repr(APP_NAME))
         .replace("__CONSOLE__",   "True" if debug else "False")
         .replace("__UPX__",       "True" if upx else "False")
+        .replace("__VERSION_LINE__", version_line)
         .replace("__ICON_LINE__", icon_line)
     )
 
-    spec_dir = HERE / "build"
     spec_dir.mkdir(parents=True, exist_ok=True)
     spec_path = spec_dir / f"{APP_NAME}.spec"
     spec_path.write_text(analysis + exe_section, encoding="utf-8")

@@ -6,7 +6,7 @@ MATLAB App Designer 원본(`Carbon_251002_5.mlapp` / `Carbon2_251013_1.mlapp`)�
 포팅한 프로젝트. **FOCA-SW**(핵심 소프트웨어)와, 수종 데이터를 갱신·재빌드하는
 **수종데이터업데이터** 두 개의 실행파일을 만든다.
 
-버전 4.4.2의 과학 라이브러리는 사용자 인터페이스에서 직접 사용하는 범위와 호환성 범위를
+버전 1.0의 과학 라이브러리는 사용자 인터페이스에서 직접 사용하는 범위와 호환성 범위를
 구분한다. 기본 대상지 평가 화면에서는 **22개 기본 레코드**(교목 7개, 관목 15개)를
 선택할 수 있다. 별도의 **55개 호환 레코드**(국내 30개, 국외 25개)는 업데이터와 수식
 평가기에서 유지되지만 현재 기본 평가 화면에서는 선택할 수 없다. 전체 라이브러리는
@@ -116,7 +116,7 @@ updater_빌드.bat
 3. 다음 중 하나로 컴파일:
    - Inno Setup Compiler 에서 `installer.iss` 열고 `Build > Compile`
    - 명령줄: `"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss`
-4. 산출물: `installer_output\FOCA-SW_Setup_4.4.2.exe`
+4. 산출물: `installer_output\FOCA-SW_Setup_1.0.exe`
 
 ---
 

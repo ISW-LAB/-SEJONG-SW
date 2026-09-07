@@ -1,9 +1,9 @@
-# FOCA-SW v4.4.2
+# FOCA-SW v1.0
 
-FOCA-SW v4.4.2 is the source release evaluated in the accompanying SoftwareX
-manuscript. It retains the scientific coverage of v4.4.1 while making the
-meaning of site-category metadata explicit and preventing version drift among
-the interface, packaging metadata, citation file, and release documentation.
+FOCA-SW v1.0 is the first public, citable release evaluated in the accompanying
+SoftwareX manuscript. This release establishes a synchronized baseline for the
+scientific library, graphical interface, packaging metadata, citation file,
+documentation, regression tests, and Windows distribution artifacts.
 
 ## Evaluated scope
 
@@ -25,6 +25,8 @@ evaluator but are not selectable in the primary site-assessment interface.
 - The interface version is imported from one package module, while a regression
   test checks the same value against the citation file, installer, and release
   notes.
+- Windows executable resources identify both the core application and the data
+  updater as FOCA-SW version 1.0.
 - Equation strings are evaluated through an abstract-syntax-tree allowlist;
   Python `eval` is not used.
 - A tracked regression suite verifies the scientific core, data-library
@@ -43,5 +45,5 @@ License. The scientific equation library in `species_data.json` uses KOGL Type
 
 Install the dependencies listed in `requirements.txt`, run the source entry
 point as documented in `README.en.md`, or reproduce the Windows executable and
-installer with the documented build scripts. The release tag and its commit
-identify the exact source state evaluated in the manuscript.
+installer with the documented build scripts. The `v1.0` release tag and its
+commit identify the exact source state evaluated in the manuscript.

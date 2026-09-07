@@ -1,6 +1,6 @@
-# FOCA-SW v4.4.2 build verification
+# FOCA-SW v1.0 build verification
 
-Verification date: 2026-09-06 (Asia/Seoul)
+Verification date: 2026-09-07 (Asia/Seoul)
 
 ## Environment
 
@@ -18,14 +18,16 @@ Verification date: 2026-09-06 (Asia/Seoul)
 4. `python build_updater.py`: completed successfully.
 5. `dist/수종데이터업데이터.exe`: startup smoke test passed.
 6. `installer.iss`: compiled successfully with Inno Setup.
+7. Windows product-version metadata: version 1.0 confirmed for the core
+   executable, data updater, and installer.
 
 ## Locally reproduced artifacts
 
 | Artifact | Bytes | SHA-256 |
 |---|---:|---|
-| `dist/FOCA-SW/FOCA-SW.exe` | 13,184,477 | `FE5D4081A9190D1782A9A69262C3A5F8ECBB0F9DA45AF7E6D7EDC7A2360AFFE8` |
-| `dist/수종데이터업데이터.exe` | 47,766,574 | `4690BA947596602412C77D8EA103B784868FBB9F5F1CD69BDA717C46410E08DA` |
-| `installer_output/FOCA-SW_Setup_4.4.2.exe` | 103,245,254 | `50F6650FA3AFD21E3DF2EB5D2CBC327788E1CDFC5AC8B6AC6AD69FF7270390A9` |
+| `dist/FOCA-SW/FOCA-SW.exe` | 13,185,499 | `6C40E0B97958B6BB827FBAAD8D9D8802EB9705957041F54B835C083276FE9B94` |
+| `dist/수종데이터업데이터.exe` | 47,770,068 | `11463FBD28668FDAC2578C0533EE73FACAE928A25CA5ACEFE22FC4D4AED68977` |
+| `installer_output/FOCA-SW_Setup_1.0.exe` | 103,238,418 | `8FDE374BDDF39101A93BB64CE92940D70988372D03DEC696FCAF869FD1F77092` |
 
 The executable and installer are reproducible local build outputs and are not
 tracked in Git. The installer is not Authenticode-signed; users should verify
