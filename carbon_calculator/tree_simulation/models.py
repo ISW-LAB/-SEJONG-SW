@@ -15,7 +15,7 @@ class VisualizationInputGroup:
     kind: Literal["tree", "shrub"]
     diameter: float
     quantity: int
-    diameter_unit: Literal["cm", "mm"]
+    diameter_unit: Literal["cm"]
     species_data: object
 
 
@@ -37,7 +37,7 @@ class VegetationGroup:
     kind: Literal["tree", "shrub"]
     quantity: int
     initial_diameter: float
-    diameter_unit: Literal["cm", "mm"]
+    diameter_unit: Literal["cm"]
     diameter_by_year: np.ndarray
     carbon_by_year_kgc: np.ndarray
     profile_key: str

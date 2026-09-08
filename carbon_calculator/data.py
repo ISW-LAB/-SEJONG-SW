@@ -20,6 +20,7 @@ CSV vs MATLAB 차이 (CSV를 출처상의 진실로 채택):
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Literal
 
 
 @dataclass(frozen=True)
@@ -27,11 +28,31 @@ class SpeciesData:
     a: float            # allometric 회귀계수 a
     b: float            # allometric 회귀계수 b
     cf: float           # 탄소전환계수 (biomass kg → C kg)
-    diameter_min: float
-    diameter_max: float
+    diameter_min_native: float
+    diameter_max_native: float
     growth_y10: float   # 1~10년 성장률 (cm/yr)
     growth_y20: float   # 11~20년 성장률 (cm/yr)
     growth_y21: float   # 21년 이후 성장률 (cm/yr)
+    equation_diameter_unit: Literal["cm", "mm"] = "cm"
+
+    @property
+    def equation_diameter_scale(self) -> float:
+        """Centimetre input을 원 상대생장식의 직경 단위로 변환하는 배율."""
+        return 10.0 if self.equation_diameter_unit == "mm" else 1.0
+
+    @property
+    def diameter_min(self) -> float:
+        """Assessment Application에 노출되는 최소 직경(cm)."""
+        return self.diameter_min_native / self.equation_diameter_scale
+
+    @property
+    def diameter_max(self) -> float:
+        """Assessment Application에 노출되는 최대 직경(cm)."""
+        return self.diameter_max_native / self.equation_diameter_scale
+
+    def to_equation_diameter(self, diameter_cm: float | object):
+        """공개 입력(cm)을 계수 적합 시 사용된 원 직경 단위로 변환한다."""
+        return diameter_cm * self.equation_diameter_scale
 
     def growth_at_year(self, year: int) -> float:
         if year <= 10:
@@ -67,26 +88,32 @@ TREE_BASE: dict[str, dict] = {
     "신갈나무":   _env_species(SpeciesData(0.0147, 3.1075, 0.5, 6, 30, 0.40, 0.40, 0.40)),
 }
 
-# 관목 (Shrub, 15종) - 직경 단위 mm (RCD)
+# 관목 (Shrub, 15종).
+# 공개 입력과 범위 표시는 RCD cm로 통일한다. 다만 기존 15개 상대생장식의
+# 계수는 RCD mm로 적합되었으므로 식 평가 직전에만 cm×10 변환을 적용한다.
 # 라벨/계수/범위 출처: 「기초 DB 자료」 시트 순번 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 23, 21, 22, 24
+def _legacy_shrub_species(*values: float) -> SpeciesData:
+    return SpeciesData(*values, equation_diameter_unit="mm")
+
+
 SHRUB_SPECIES: dict[str, SpeciesData] = {
-    "사철나무":     SpeciesData(0.0002,    2.50, 0.50,  6, 53, 0.30, 0.22, 0.22),
-    "산철쭉":       SpeciesData(0.0003,    2.40, 0.50,  1, 22, 0.31, 0.17, 0.17),
-    "조팝나무":     SpeciesData(0.00025,   2.60, 0.50,  5, 44, 0.20, 0.14, 0.14),
+    "사철나무":     _legacy_shrub_species(0.0002,    2.50, 0.50,  6, 53, 0.30, 0.22, 0.22),
+    "산철쭉":       _legacy_shrub_species(0.0003,    2.40, 0.50,  1, 22, 0.31, 0.17, 0.17),
+    "조팝나무":     _legacy_shrub_species(0.00025,   2.60, 0.50,  5, 44, 0.20, 0.14, 0.14),
     # 순번 13 (Excel a=0.000022; MATLAB 원본 0.00022 의 1/10 — 회양목과 동일 패턴, Excel 채택)
     # 성장률은 MATLAB 원본 위치매칭값(0.38/0.25/0.25) 사용
-    "화살나무":     SpeciesData(0.000022,  2.55, 0.50, 11, 67, 0.38, 0.25, 0.25),
-    "회양목":       SpeciesData(0.000018,  2.70, 0.50,  8, 30, 0.24, 0.17, 0.17),
-    "개나리":       SpeciesData(0.00028,   2.45, 0.50,  4, 26, 0.16, 0.16, 0.16),
-    "남천":         SpeciesData(0.00031,   2.30, 0.50,  4, 35, 0.24, 0.22, 0.22),
-    "덜꿩나무":     SpeciesData(0.00026,   2.50, 0.50,  7, 39, 0.35, 0.00, 0.00),
-    "말발도리":     SpeciesData(0.00023,   2.60, 0.50,  4, 25, 0.30, 0.00, 0.00),
-    "병꽃나무":     SpeciesData(0.00029,   2.40, 0.50,  6, 39, 0.30, 0.24, 0.24),
-    "싸리":         SpeciesData(0.00015,   2.80, 0.50,  2, 17, 0.10, 0.06, 0.06),
-    "수수꽃다리":   SpeciesData(0.00005,   2.64, 0.45,  5, 29, 0.25, 0.23, 0.23),
-    "좀작살나무":   SpeciesData(0.0021,    2.65, 0.50,  7, 25, 0.24, 0.16, 0.16),
-    "쥐똥나무":     SpeciesData(0.00019,   2.75, 0.50,  4, 35, 0.18, 0.21, 0.21),
-    "흰말채나무":   SpeciesData(0.00027,   2.52, 0.50,  7, 52, 0.29, 0.26, 0.26),
+    "화살나무":     _legacy_shrub_species(0.000022,  2.55, 0.50, 11, 67, 0.38, 0.25, 0.25),
+    "회양목":       _legacy_shrub_species(0.000018,  2.70, 0.50,  8, 30, 0.24, 0.17, 0.17),
+    "개나리":       _legacy_shrub_species(0.00028,   2.45, 0.50,  4, 26, 0.16, 0.16, 0.16),
+    "남천":         _legacy_shrub_species(0.00031,   2.30, 0.50,  4, 35, 0.24, 0.22, 0.22),
+    "덜꿩나무":     _legacy_shrub_species(0.00026,   2.50, 0.50,  7, 39, 0.35, 0.00, 0.00),
+    "말발도리":     _legacy_shrub_species(0.00023,   2.60, 0.50,  4, 25, 0.30, 0.00, 0.00),
+    "병꽃나무":     _legacy_shrub_species(0.00029,   2.40, 0.50,  6, 39, 0.30, 0.24, 0.24),
+    "싸리":         _legacy_shrub_species(0.00015,   2.80, 0.50,  2, 17, 0.10, 0.06, 0.06),
+    "수수꽃다리":   _legacy_shrub_species(0.00005,   2.64, 0.45,  5, 29, 0.25, 0.23, 0.23),
+    "좀작살나무":   _legacy_shrub_species(0.0021,    2.65, 0.50,  7, 25, 0.24, 0.16, 0.16),
+    "쥐똥나무":     _legacy_shrub_species(0.00019,   2.75, 0.50,  4, 35, 0.18, 0.21, 0.21),
+    "흰말채나무":   _legacy_shrub_species(0.00027,   2.52, 0.50,  7, 52, 0.29, 0.26, 0.26),
 }
 
 
@@ -159,7 +186,7 @@ def _load_from_bundled_json() -> None:
         return
 
     # 영문 표기(SPECIES_EN·ENVIRONMENTS_EN)도 같은 JSON 에서 가져온다 —
-    # 수종데이터업데이터로 새 수종을 넣으면 학명도 함께 갱신되도록.
+    # Equation Library Manager로 새 수종을 넣으면 학명도 함께 갱신되도록.
     from .i18n import load_json_overrides as _load_i18n_overrides
     _load_i18n_overrides(_raw)
 
@@ -173,9 +200,16 @@ def _load_from_bundled_json() -> None:
         elif isinstance(_entry, list):
             _new_tree[_name] = _env_species(SpeciesData(*_entry))
 
+    _schema = _raw.get('_schema') if isinstance(_raw.get('_schema'), dict) else {}
+    _shrub_equation_unit = _schema.get('SHRUB_SPECIES_equation_diameter_unit', 'mm')
+    if _shrub_equation_unit not in ('cm', 'mm'):
+        _shrub_equation_unit = 'mm'
+
     _new_shrub: dict = {}
     for _name, _arr in _raw.get('SHRUB_SPECIES', {}).items():
-        _new_shrub[_name] = SpeciesData(*_arr)
+        _new_shrub[_name] = SpeciesData(
+            *_arr, equation_diameter_unit=_shrub_equation_unit,
+        )
 
     if _new_tree:
         TREE_BASE = _new_tree

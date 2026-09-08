@@ -1,6 +1,6 @@
 {
   "_schema": {
-    "version": "2.0",
+    "version": "2.1",
     "description": "FORECAST-SW 통합 수종 데이터 (교목·관목·국내·국외).",
     "license": "KOGL Type 1 (Attribution)",
     "license_file": "DATA_LICENSE.md",
@@ -14,7 +14,11 @@
       "growth_y20",
       "growth_y21"
     ],
-    "carbon1_note": "교목(TREE_BASE)·관목(SHRUB_SPECIES) allometric 상대생장식. biomass(kg)=a×D^b, 탄소량=biomass×cf. 교목 직경 cm(DBH), 관목 mm(RCD), 성장률 cm/yr. 대상지 유형은 프로젝트 메타데이터이며 모든 대상지에서 수종별 default 레코드를 사용한다.",
+    "carbon1_note": "All Assessment Application inputs, ranges, tables, plots, and exports express tree DBH and shrub RCD in cm. TREE_BASE coefficients use DBH in cm. SHRUB_SPECIES preserves legacy coefficients fitted with RCD in mm, so the analytical adapter evaluates those equations at 10 × RCD(cm). Growth increments are stored and applied in cm/year. Site category is descriptive metadata and does not select coefficients.",
+    "assessment_diameter_unit": "cm",
+    "TREE_BASE_equation_diameter_unit": "cm",
+    "SHRUB_SPECIES_equation_diameter_unit": "mm",
+    "growth_diameter_unit": "cm/year",
     "carbon2_fields": {
       "equation": "평가 가능한 수식 문자열. X=첫번째 변수, H=두번째 변수(다변수 식만). **=거듭제곱.",
       "range": "[diameter_min, diameter_max]. null 이면 범위 검사 안 함.",

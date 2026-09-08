@@ -20,13 +20,15 @@ from .translations import EN
 
 LANG_KO = "ko"
 LANG_EN = "en"
-LANGUAGE_LABELS = {LANG_KO: "한국어", LANG_EN: "English"}
+LANGUAGE_LABELS = {LANG_KO: "Korean", LANG_EN: "English"}
 
 _ORG = "SejongArboretum"
-_APP = "CarbonStorageModule"
+# Use a release-specific application key so legacy Korean preferences from the
+# pre-FORECAST-SW package do not override the English-first v1.0 interface.
+_APP = "FORECAST-SW-v1"
 _KEY = "language"
 
-_current = LANG_KO
+_current = LANG_EN
 
 # species_data.json 이 제공하는 확장 매핑 (있으면 내장 표보다 우선)
 _json_species: dict[str, str] = {}
@@ -44,9 +46,9 @@ def is_english() -> bool:
 
 
 def set_language(code: str) -> None:
-    """현재 언어를 바꾼다(저장하지 않음). 잘못된 값은 무시하고 한국어를 유지한다."""
+    """현재 언어를 바꾼다(저장하지 않음). 잘못된 값은 영어로 정규화한다."""
     global _current
-    _current = LANG_EN if code == LANG_EN else LANG_KO
+    _current = LANG_KO if code == LANG_KO else LANG_EN
 
 
 def load_saved_language() -> str | None:
@@ -65,7 +67,7 @@ def save_language(code: str) -> None:
     try:
         from PyQt5.QtCore import QSettings
         settings = QSettings(_ORG, _APP)
-        settings.setValue(_KEY, LANG_EN if code == LANG_EN else LANG_KO)
+        settings.setValue(_KEY, LANG_KO if code == LANG_KO else LANG_EN)
         settings.sync()
     except Exception:
         pass

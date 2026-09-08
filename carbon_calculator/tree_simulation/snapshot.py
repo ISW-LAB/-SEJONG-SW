@@ -28,6 +28,7 @@ def input_fingerprint(region_name: str, environment: str, area_w: float, area_h:
                 item.diameter_unit,
                 item.species_data.a, item.species_data.b, item.species_data.cf,
                 item.species_data.diameter_min, item.species_data.diameter_max,
+                item.species_data.equation_diameter_unit,
                 item.species_data.growth_y10, item.species_data.growth_y20,
                 item.species_data.growth_y21,
             ]
@@ -43,13 +44,11 @@ def build_snapshot(*, region_name: str, environment: str, area_w: float, area_h:
                    warnings: tuple[str, ...] = ()) -> RegionVisualizationSnapshot:
     groups: list[VegetationGroup] = []
     for group_id, item in enumerate(inputs):
-        mm_scale = item.kind == "shrub"
         years, carbon = project_future_carbon(
             item.species_data, item.diameter, item.quantity, years=50,
-            mm_scale=mm_scale,
         )
         diameters = diameter_timeline(
-            item.species_data, item.diameter, years=50, mm_scale=mm_scale,
+            item.species_data, item.diameter, years=50,
         )
         groups.append(VegetationGroup(
             group_id=group_id,

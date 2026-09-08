@@ -6,7 +6,7 @@
 그대로 쓸 수 있도록 통용명 없이 속명+종소명만 둔다.
 
 `species_data.json` 에 `SPECIES_EN` / `ENVIRONMENTS_EN` 섹션이 있으면 그 값이
-이 표를 덮어쓴다(수종데이터업데이터로 새 수종을 넣을 때 코드 수정 없이 확장하기 위함).
+이 표를 덮어쓴다(Equation Library Manager로 새 수종을 넣을 때 코드 수정 없이 확장하기 위함).
 `(지상부)`·`(전체, 경남)` 같은 꼬리표는 기본명과 분리해 QUALIFIER_EN 으로 번역한다.
 """
 from __future__ import annotations

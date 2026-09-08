@@ -15,10 +15,9 @@ from __future__ import annotations
 
 import datetime
 import io
-import math
 import random
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import List, Optional, Tuple
 
 from PyQt5.QtCore import Qt, pyqtSignal
@@ -34,6 +33,11 @@ from .calculations import (
     CarbonRow, RangeViolation, calculate_carbon, project_future_carbon,
 )
 from .i18n import environment_name, species_name, tr
+from .input_limits import (
+    SHRUB_PLANTING_AREA_M2_PER_INDIVIDUAL,
+    TREE_PLANTING_AREA_M2_PER_INDIVIDUAL,
+    planting_area_budget,
+)
 from .version import __version__
 from .data import (
     DEFAULT_ENVIRONMENT, SpeciesData, shrub_species_for_env, tree_species_for_env,
@@ -100,15 +104,14 @@ class AddSpeciesDialog(QDialog):
         # 환경별로 해석된 수종 맵/목록을 호출측(MainWindow)에서 주입받는다.
         self._species_map = species_map
         self._names = list(names)
-        self._last_random_test_values: tuple[str, int, int] | None = None
-        self._diameter_unit = "cm" if is_tree else "mm"
+        self._last_random_test_values: tuple[str, float, int] | None = None
+        self._diameter_unit = "cm"
         diameter_label = tr("변수 ({var} · {unit})").format(
             var="DBH" if is_tree else "RCD", unit=self._diameter_unit)
-        diameter_max = 50 if is_tree else 100
 
         body = QHBoxLayout()
         body.setSpacing(14)
-        body.addWidget(self._build_left_panel(names, diameter_label, diameter_max), 1)
+        body.addWidget(self._build_left_panel(names, diameter_label), 1)
         body.addWidget(self._build_right_panel(), 1)
 
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
@@ -151,7 +154,7 @@ class AddSpeciesDialog(QDialog):
 
     # ----- 좌/우 패널 빌드 -----
 
-    def _build_left_panel(self, names: List[str], diameter_label: str, diameter_max: int) -> QWidget:
+    def _build_left_panel(self, names: List[str], diameter_label: str) -> QWidget:
         group = QGroupBox(tr("입력"))
         form = QFormLayout(group)
         form.setSpacing(10)
@@ -160,11 +163,13 @@ class AddSpeciesDialog(QDialog):
         self.combo.set_items([(species_name(n), n) for n in names])
         form.addRow(tr("카테고리 (수종)"), self.combo)
 
-        # 직경: 입력 자체는 제한하지 않고 넓게 연다 (검증은 '추가' 클릭 시 수행).
-        # diameter_max 는 더 이상 입력 상한이 아니며 표시용 정보로만 쓰인다.
-        self.diameter_spin = NoWheelSpinBox()
-        self.diameter_spin.setRange(1, 100000)
-        self.diameter_spin.setValue(1)
+        # DBH와 RCD 모두 cm로 입력하며, 1 mm에 해당하는 0.1 cm도 표현할 수 있다.
+        # 입력 자체는 넓게 열고 검증은 '추가' 클릭 시 수행한다.
+        self.diameter_spin = NoWheelDoubleSpinBox()
+        self.diameter_spin.setDecimals(2)
+        self.diameter_spin.setSingleStep(0.1)
+        self.diameter_spin.setRange(0.01, 100000.0)
+        self.diameter_spin.setValue(1.0)
         form.addRow(diameter_label, self.diameter_spin)
 
         self.quantity_spin = NoWheelSpinBox()
@@ -242,16 +247,16 @@ class AddSpeciesDialog(QDialog):
     # ----- 이벤트 -----
 
     @staticmethod
-    def _test_diameter_range(sp: SpeciesData) -> tuple[int, int]:
-        """수종 유효 범위의 양 끝 10%를 가급적 피한 정수 테스트 구간."""
+    def _test_diameter_range(sp: SpeciesData) -> tuple[float, float]:
+        """수종 유효 범위(cm)의 양 끝 10%를 가급적 피한 테스트 구간."""
         span = max(0.0, sp.diameter_max - sp.diameter_min)
-        low = math.ceil(sp.diameter_min + span * TEST_DIAMETER_MARGIN_RATIO)
-        high = math.floor(sp.diameter_max - span * TEST_DIAMETER_MARGIN_RATIO)
+        low = sp.diameter_min + span * TEST_DIAMETER_MARGIN_RATIO
+        high = sp.diameter_max - span * TEST_DIAMETER_MARGIN_RATIO
         if low > high:
-            low = math.ceil(sp.diameter_min)
-            high = math.floor(sp.diameter_max)
-        if low > high:  # 정수 QSpinBox로 표현 가능한 값이 없는 비정상적으로 좁은 범위 방어
-            value = int(round((sp.diameter_min + sp.diameter_max) / 2))
+            low = sp.diameter_min
+            high = sp.diameter_max
+        if low > high:
+            value = (sp.diameter_min + sp.diameter_max) / 2.0
             return value, value
         return low, high
 
@@ -268,11 +273,9 @@ class AddSpeciesDialog(QDialog):
             species = random.choice(available)
             sp = self._species_map[species]
             diameter_low, diameter_high = self._test_diameter_range(sp)
-            candidate = (
-                species,
-                random.randint(diameter_low, diameter_high),
-                random.randint(quantity_low, quantity_high),
-            )
+            diameter = round(random.uniform(diameter_low, diameter_high), 1)
+            diameter = max(sp.diameter_min, min(sp.diameter_max, diameter))
+            candidate = (species, diameter, random.randint(quantity_low, quantity_high))
             if candidate != self._last_random_test_values:
                 break
         if candidate is None:
@@ -308,7 +311,7 @@ class AddSpeciesDialog(QDialog):
         # 합리적인 기본값에서 시작하도록 한다(사용자는 이후 자유롭게 수정 가능).
         d = self.diameter_spin.value()
         if d < sp.diameter_min or d > sp.diameter_max:
-            self.diameter_spin.setValue(int(sp.diameter_min))
+            self.diameter_spin.setValue(float(sp.diameter_min))
         # CSV 정보 표시
         u = self._diameter_unit
         self.range_value_label.setText(f"{sp.diameter_min:g} {u} ~ {sp.diameter_max:g} {u}")
@@ -322,8 +325,12 @@ class AddSpeciesDialog(QDialog):
         a = self.a_spin.value()
         b = self.b_spin.value()
         cf = self.cf_spin.value()
+        sp = self._species_map.get(self.combo.current_data())
+        x_term = "(10 × X)" if sp and sp.equation_diameter_unit == "mm" else "X"
+        diameter_name = "DBH" if self.kind == "tree" else "RCD"
         self.formula_label.setText(
-            f"Y  =  {a:g}  ×  X^{b:g}      C  =  Y  ×  {cf:g}  ×  N"
+            f"Y  =  {a:g}  ×  {x_term}^{b:g}      C  =  Y  ×  {cf:g}  ×  N"
+            f"      X = {diameter_name} (cm)"
         )
 
     def _reset_to_defaults(self) -> None:
@@ -344,8 +351,8 @@ class AddSpeciesDialog(QDialog):
                 u = self._diameter_unit
                 QMessageBox.warning(
                     self, tr("유효 직경 범위 아님"),
-                    tr("입력한 직경 {d:g}{u} 은(는) '{species}'의 유효 범위"
-                       "({vmin:g}{u} ~ {vmax:g}{u})를 벗어납니다.\n\n"
+                    tr("입력한 직경 {d:g} {u} 은(는) '{species}'의 유효 범위"
+                       "({vmin:g} {u} ~ {vmax:g} {u})를 벗어납니다.\n\n"
                        "값을 유효 범위 안으로 수정한 뒤 다시 [추가]를 눌러 주세요.")
                     .format(d=d, u=u, species=species_name(species),
                             vmin=sp.diameter_min, vmax=sp.diameter_max),
@@ -357,7 +364,7 @@ class AddSpeciesDialog(QDialog):
 
     # ----- 결과 -----
 
-    def values(self) -> Tuple[str, int, int, Optional[OverrideCoeffs]]:
+    def values(self) -> Tuple[str, float, int, Optional[OverrideCoeffs]]:
         """
         Returns: (species, diameter, quantity, override_coeffs_or_None)
         override_coeffs 는 a/b/CF 중 하나라도 기본값에서 변경된 경우에만 (a, b, cf) 튜플.
@@ -385,7 +392,7 @@ class SpeciesInputRow(QFrame):
 
     deleted = pyqtSignal(object)         # emits self
 
-    def __init__(self, kind: str, species: str, diameter: int, quantity: int,
+    def __init__(self, kind: str, species: str, diameter: float, quantity: int,
                  names: list, override_coeffs: Optional[OverrideCoeffs] = None, parent=None):
         super().__init__(parent)
         self.kind = kind
@@ -396,8 +403,7 @@ class SpeciesInputRow(QFrame):
             "QFrame { background: #FBFDFC; border: 1px solid #DCE1E6; border-radius: 8px; }"
         )
 
-        diameter_label = "DBH(cm)" if is_tree else "RCD(mm)"
-        diameter_max = 50 if is_tree else 100
+        diameter_label = "DBH(cm)" if is_tree else "RCD(cm)"
 
         outer = QVBoxLayout(self)
         outer.setContentsMargins(6, 6, 6, 6)
@@ -435,9 +441,11 @@ class SpeciesInputRow(QFrame):
         d_label = QLabel(diameter_label)
         d_label.setMinimumWidth(px(60))
         d_row.addWidget(d_label)
-        self.diameter_spin = NoWheelSpinBox()
-        self.diameter_spin.setRange(1, diameter_max)
-        self.diameter_spin.setValue(max(1, int(diameter)))
+        self.diameter_spin = NoWheelDoubleSpinBox()
+        self.diameter_spin.setDecimals(2)
+        self.diameter_spin.setSingleStep(0.1)
+        self.diameter_spin.setRange(0.01, 100000.0)
+        self.diameter_spin.setValue(max(0.01, float(diameter)))
         d_row.addWidget(self.diameter_spin, 1)
         outer.addLayout(d_row)
 
@@ -483,7 +491,7 @@ class SpeciesInputRow(QFrame):
         )
         self.override_label.setVisible(True)
 
-    def values(self) -> Tuple[str, int, int]:
+    def values(self) -> Tuple[str, float, int]:
         return (self.combo.currentData(), self.diameter_spin.value(),
                 self.quantity_spin.value())
 
@@ -567,6 +575,7 @@ class MainWindow(QMainWindow):
         layout.setSpacing(4)
 
         tabs = QTabWidget()
+        self._input_tabs = tabs
         layout.addWidget(tabs, 1)
 
         # 교목 탭
@@ -660,7 +669,7 @@ class MainWindow(QMainWindow):
         species, diameter, quantity, override = dlg.values()
         self._append_row(kind, species, diameter, quantity, override_coeffs=override)
 
-    def _append_row(self, kind: str, species: str, diameter: int, quantity: int,
+    def _append_row(self, kind: str, species: str, diameter: float, quantity: int,
                     override_coeffs: Optional[OverrideCoeffs] = None) -> None:
         names = self._tree_names if kind == "tree" else self._shrub_names
         row = SpeciesInputRow(kind, species, diameter, quantity, names,
@@ -746,7 +755,7 @@ class MainWindow(QMainWindow):
         self.tree_table = self._make_result_table()
         self.shrub_table = self._make_result_table()
         tables.addLayout(self._table_box(tr("교목 결과 (DBH·cm)"), self.tree_table))
-        tables.addLayout(self._table_box(tr("관목 결과 (RCD·mm)"), self.shrub_table))
+        tables.addLayout(self._table_box(tr("관목 결과 (RCD·cm)"), self.shrub_table))
 
         # 그래프(sub tab) ↔ 결과 테이블 사이 높이를 세로 드래그로 조절
         body_splitter = QSplitter(Qt.Vertical)
@@ -872,6 +881,51 @@ class MainWindow(QMainWindow):
         tree_entries, total_tree, tree_qty, w_tree = self._collect_entries("tree")
         shrub_entries, total_shrub, shrub_qty, w_shrub = self._collect_entries("shrub")
 
+        # Diameter-domain errors are reported before the site-area check.  The
+        # calculation boundary repeats the range guard so invalid rows cannot
+        # bypass the entry dialog.
+        warnings = w_tree + w_shrub
+        if warnings:
+            QMessageBox.warning(
+                self, tr("입력값 오류 (해당 행 제외)"), "\n".join(warnings)
+            )
+
+        # Validate the combined footprint instead of applying independent or
+        # absolute count thresholds.  The per-individual areas are configurable
+        # data-entry safeguards, not species-specific planting recommendations.
+        area_budget = planting_area_budget(
+            area_w=self.area_w,
+            area_h=self.area_h,
+            tree_quantity=tree_qty,
+            shrub_quantity=shrub_qty,
+        )
+        if area_budget is not None and area_budget.is_exceeded:
+            QMessageBox.warning(
+                self,
+                tr("식재 면적 입력 한도"),
+                tr(
+                    "교목과 관목의 식재 면적 합계가 설정된 대상지 면적을 초과합니다.\n\n"
+                    "대상지 면적: {site_area:,.2f} m²\n"
+                    "교목: {tree_quantity:,}개체 × {tree_unit_area:.2f} m² = {tree_area:,.2f} m²\n"
+                    "관목: {shrub_quantity:,}개체 × {shrub_unit_area:.2f} m² = {shrub_area:,.2f} m²\n"
+                    "필요 식재 면적: {required_area:,.2f} m²\n"
+                    "초과 면적: {excess_area:,.2f} m²\n\n"
+                    "개체 수를 줄이거나 대상지 면적을 늘려 주세요. 계산은 수행되지 않았습니다.\n"
+                    "개체당 기본 식재 면적은 입력 오류 방지를 위한 설정값이며 수종별 식재 권고가 아닙니다."
+                ).format(
+                    site_area=area_budget.site_area_m2,
+                    tree_quantity=area_budget.tree_quantity,
+                    tree_unit_area=TREE_PLANTING_AREA_M2_PER_INDIVIDUAL,
+                    tree_area=area_budget.tree_area_m2,
+                    shrub_quantity=area_budget.shrub_quantity,
+                    shrub_unit_area=SHRUB_PLANTING_AREA_M2_PER_INDIVIDUAL,
+                    shrub_area=area_budget.shrub_area_m2,
+                    required_area=area_budget.required_area_m2,
+                    excess_area=area_budget.excess_area_m2,
+                ),
+            )
+            return
+
         # 다음 계산/저장에서 재사용할 수 있도록 캐시.
         self._tree_entries = tree_entries
         self._shrub_entries = shrub_entries
@@ -898,27 +952,6 @@ class MainWindow(QMainWindow):
         self._render_projection("shrub")
         self._render_pie("tree", tree_entries)
         self._render_pie("shrub", shrub_entries)
-
-        # (요구사항 4) 총 개수 1,000 초과 경고 — 계산은 이미 끝났고, 막지 않는다.
-        count_warnings: List[str] = []
-        if tree_qty > 1000:
-            count_warnings.append(
-                tr("교목 총 개수가 {n:,}주로 1,000주를 초과합니다.").format(n=tree_qty))
-        if shrub_qty > 1000:
-            count_warnings.append(
-                tr("관목 총 개수가 {n:,}주로 1,000주를 초과합니다.").format(n=shrub_qty))
-
-        # 경고 표시 (범위 위반 → 대량 입력 순). 어느 쪽도 계산을 중단시키지 않는다.
-        warnings = w_tree + w_shrub
-        if warnings:
-            QMessageBox.warning(
-                self, tr("입력값 오류 (해당 행 제외)"), "\n".join(warnings)
-            )
-        if count_warnings:
-            QMessageBox.warning(
-                self, tr("대량 입력 경고"),
-                "\n".join(count_warnings) + tr("\n\n계산은 정상적으로 수행되었습니다."),
-            )
 
     def on_clear(self) -> None:
         """입력 행·결과 테이블·게이지·그래프를 모두 비운다 (누적/캐시 방지)."""
@@ -975,11 +1008,32 @@ class MainWindow(QMainWindow):
         _se, total_shrub, _sq, _ws = self._collect_entries("shrub")
         return total_tree, total_shrub, total_tree + total_shrub
 
+    def region_inventory_summary(self) -> dict:
+        """종합 비교용 유효 개체 수, 식재 면적, 탄소량을 한 번에 반환한다."""
+        _te, total_tree, tree_quantity, _wt = self._collect_entries("tree")
+        _se, total_shrub, shrub_quantity, _ws = self._collect_entries("shrub")
+        budget = planting_area_budget(
+            area_w=self.area_w,
+            area_h=self.area_h,
+            tree_quantity=tree_quantity,
+            shrub_quantity=shrub_quantity,
+        )
+        return {
+            "tree": total_tree,
+            "shrub": total_shrub,
+            "total": total_tree + total_shrub,
+            "tree_quantity": tree_quantity,
+            "shrub_quantity": shrub_quantity,
+            "tree_planting_area": budget.tree_area_m2 if budget else 0.0,
+            "shrub_planting_area": budget.shrub_area_m2 if budget else 0.0,
+            "required_planting_area": budget.required_area_m2 if budget else 0.0,
+        }
+
     def _collect_entries(self, kind: str) -> Tuple[List[_Entry], float, int, List[str]]:
         """입력 행을 순회해 유효 행의 `_Entry` 리스트·합계·총 수량·경고 메시지를 반환.
 
-        반환하는 `total_qty` 는 **입력된 전체 수량**(직경 범위를 벗어나 결과에서 제외된
-        행의 수량도 포함)이다. 1,000 초과 경고가 "입력한 그루 수" 기준이 되도록 하기 위함.
+        반환하는 `total_qty` 는 직경·계수 검증을 통과한 행의 전체 수량이며, 교목과 관목의
+        합산 식재 면적을 대상지 면적과 비교하는 입력 보호 로직에 사용한다.
 
         범위 위반 행은 경고에 누적하고 결과(합계·테이블)에서 제외하지만, 호출측에서 경고를
         한 번에 표시하도록 여기서는 메시지박스를 띄우지 않는다.
@@ -987,11 +1041,10 @@ class MainWindow(QMainWindow):
         if kind == "tree":
             input_rows = self.tree_rows
             species_map = self._tree_species
-            unit = "cm"
         else:
             input_rows = self.shrub_rows
             species_map = self._shrub_species
-            unit = "mm"
+        unit = "cm"
 
         entries: List[_Entry] = []
         total = 0.0
@@ -1004,20 +1057,11 @@ class MainWindow(QMainWindow):
             base = species_map.get(species_name)
             if base is None:
                 continue
-            # 입력된 전체 수량 누적 (범위 위반으로 곧 제외될 행도 포함) — 1,000 초과 경고용.
-            total_qty += quantity
             # 행에 사용자 정의 (a, b, CF) 가 있으면 임시 SpeciesData 구성.
             override = input_row.override_coeffs()
             if override is not None:
                 a, b, cf = override
-                species_data = SpeciesData(
-                    a=a, b=b, cf=cf,
-                    diameter_min=base.diameter_min,
-                    diameter_max=base.diameter_max,
-                    growth_y10=base.growth_y10,
-                    growth_y20=base.growth_y20,
-                    growth_y21=base.growth_y21,
-                )
+                species_data = replace(base, a=a, b=b, cf=cf)
             else:
                 species_data = base
             try:
@@ -1026,6 +1070,7 @@ class MainWindow(QMainWindow):
                 warnings.append(str(e))
                 continue
             if row is not None:
+                total_qty += quantity
                 entries.append(_Entry(
                     species=species_name, species_data=species_data,
                     diameter=diameter, quantity=quantity, carbon_kg=row.carbon_kg, unit=unit,
@@ -1093,7 +1138,7 @@ class MainWindow(QMainWindow):
         warnings: list[str] = []
         for kind, input_rows, species_map, unit in (
             ("tree", self.tree_rows, self._tree_species, "cm"),
-            ("shrub", self.shrub_rows, self._shrub_species, "mm"),
+            ("shrub", self.shrub_rows, self._shrub_species, "cm"),
         ):
             for input_row in input_rows:
                 species, diameter, quantity = input_row.values()
@@ -1104,7 +1149,7 @@ class MainWindow(QMainWindow):
                     continue
                 if diameter < base.diameter_min or diameter > base.diameter_max:
                     warnings.append(
-                        tr("{species}: 유효 범위 {vmin:g}~{vmax:g}{unit} 밖의 입력은 제외됨")
+                        tr("{species}: 유효 범위 {vmin:g}~{vmax:g} {unit} 밖의 입력은 제외됨")
                         .format(species=species_name(species), vmin=base.diameter_min,
                                 vmax=base.diameter_max, unit=unit)
                     )
@@ -1114,14 +1159,7 @@ class MainWindow(QMainWindow):
                     species_data = base
                 else:
                     a, b, cf = override
-                    species_data = SpeciesData(
-                        a=a, b=b, cf=cf,
-                        diameter_min=base.diameter_min,
-                        diameter_max=base.diameter_max,
-                        growth_y10=base.growth_y10,
-                        growth_y20=base.growth_y20,
-                        growth_y21=base.growth_y21,
-                    )
+                    species_data = replace(base, a=a, b=b, cf=cf)
                 result.append(VisualizationInputGroup(
                     species=species,
                     kind=kind,
@@ -1186,11 +1224,10 @@ class MainWindow(QMainWindow):
 
     def _build_curves(self, kind: str, entries: List[_Entry]) -> None:
         """각 항목을 독립적으로 50년 투영해 entry.curve/label 에 채우고 연도축을 캐시."""
-        mm = (kind == "shrub")
         years_ref = None
         for e in entries:
             years, carbon = project_future_carbon(
-                e.species_data, e.diameter, e.quantity, years=50, mm_scale=mm,
+                e.species_data, e.diameter, e.quantity, years=50,
             )
             e.curve = carbon
             e.label = tr("{species} ({d:g}{unit}·{n:g}주)").format(
@@ -1391,7 +1428,7 @@ class MainWindow(QMainWindow):
             entries, years, checks = self._tree_entries, self._tree_years, self._tree_checks
         else:
             entries, years, checks = self._shrub_entries, self._shrub_years, self._shrub_checks
-        unit = "cm" if kind == "tree" else "mm"
+        unit = "cm"
 
         rows = [
             {

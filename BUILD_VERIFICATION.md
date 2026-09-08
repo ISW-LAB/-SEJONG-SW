@@ -12,22 +12,26 @@ Verification date: 2026-09-07 (Asia/Seoul)
 
 ## Checks performed
 
-1. `python -m unittest discover -s tests -v`: 12 tests passed.
-2. `python build_exe.py --onedir --clean-cache`: completed successfully.
-3. `dist/FORECAST-SW/FORECAST-SW.exe --lang en`: startup smoke test passed.
+1. `python -m unittest discover -s tests -v`: 18 tests passed, including the
+   shared-centimeter DBH/RCD contract, legacy shrub-equation equivalence,
+   combined planting-area boundary and over-limit cases, area-normalized
+   carbon density, and normalized-density values exported to XLSX.
+2. `python build_exe.py --onedir`: completed successfully.
+3. `dist/FORECAST-SW/FORECAST-SW.exe`: English-interface startup smoke test
+   passed.
 4. `python build_updater.py`: completed successfully.
-5. `dist/수종데이터업데이터.exe`: startup smoke test passed.
+5. `dist/FORECAST-SW-Equation-Library-Manager.exe`: startup smoke test passed.
 6. `installer.iss`: compiled successfully with Inno Setup.
-7. Windows product-version metadata: version 1.0 confirmed for the core
-   executable, data updater, and installer.
+7. Windows product-version metadata: version 1.0 confirmed for the Assessment
+   Application, Equation Library Manager, and installer.
 
 ## Locally reproduced artifacts
 
 | Artifact | Bytes | SHA-256 |
 |---|---:|---|
-| `dist/FORECAST-SW/FORECAST-SW.exe` | 13,185,536 | `36F5E9F9851AB16C87F4CF133AEF56ACD1F5098A876361F0D22BF9B05AE2276F` |
-| `dist/수종데이터업데이터.exe` | 47,772,242 | `68D4A946F3EDDED61959A439ED920736FDF119CA9B55ADC713C8101F3581133C` |
-| `installer_output/FORECAST-SW_Setup_1.0.exe` | 103,241,446 | `13EFD0C6E0D2367E2F78D859C0E6F675182DDFCBE9C5A54F44013B90E79A1F11` |
+| `dist/FORECAST-SW/FORECAST-SW.exe` | 13,194,908 | `D9FA13BA0C5E4E81803571524C7EBC8113B1144707850EFAA7A9C9AB554DFD2A` |
+| `dist/FORECAST-SW-Equation-Library-Manager.exe` | 47,777,416 | `2BF4DEDD8F3C65BF097C06B310303F6339A28489D4567D48FFBC3010B9D1A409` |
+| `installer_output/FORECAST-SW_Setup_1.0.exe` | 150,503,898 | `FC1B6AC150F61CC92C86F8F3CB75BBF33BA814CED396910ECF25471B854F6649` |
 
 The executable and installer are reproducible local build outputs and are not
 tracked in Git. The installer is not Authenticode-signed; users should verify

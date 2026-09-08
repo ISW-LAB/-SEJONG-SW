@@ -3,18 +3,37 @@
 > English version: [README.en.md](README.en.md)
 
 MATLAB App Designer 원본(`Carbon_251002_5.mlapp` / `Carbon2_251013_1.mlapp`)을 Python(PyQt5)으로
-포팅한 프로젝트. **FORECAST-SW**(핵심 소프트웨어)와, 수종 데이터를 갱신·재빌드하는
-**수종데이터업데이터** 두 개의 실행파일을 만든다.
+포팅한 프로젝트. 대상지 분석을 수행하는 **FORECAST-SW Assessment Application**
+(`FORECAST-SW.exe`)과 상대생장식 레코드를 편집·검증·백업·배포하는
+**FORECAST-SW Equation Library Manager**
+(`FORECAST-SW-Equation-Library-Manager.exe`) 두 개의 실행파일을 만든다.
 
 버전 1.0의 과학 라이브러리는 사용자 인터페이스에서 직접 사용하는 범위와 호환성 범위를
 구분한다. 기본 대상지 평가 화면에서는 **22개 기본 레코드**(교목 7개, 관목 15개)를
-선택할 수 있다. 별도의 **55개 호환 레코드**(국내 30개, 국외 25개)는 업데이터와 수식
-평가기에서 유지되지만 현재 기본 평가 화면에서는 선택할 수 없다. 전체 라이브러리는
+선택할 수 있다. 별도의 **55개 호환 레코드**(국내 30개, 국외 25개)는 Equation Library
+Manager와 수식 평가기에서 유지되지만 현재 기본 평가 화면에서는 선택할 수 없다. 전체 라이브러리는
 77개 명명 레코드와 79개 실행 가능 수식으로 구성된다.
 
 각 프로젝트에 저장되는 대상지 유형은 설명용 메타데이터이다. 이 릴리스에서는 대상지
 유형이 상대생장식 계수를 선택하거나 변경하지 않으며, 모든 대상지가 수종별로 검증된
 기본 레코드를 동일하게 사용한다.
+
+사용자가 입력하고 확인하는 모든 직경 단위는 cm로 통일한다. 즉, 교목의 흉고직경(DBH)과
+관목의 근원직경(RCD)은 화면, 결과표, 그래프, 시각화, XLSX 파일에서 모두 cm로 표시된다.
+기존 15개 관목 상대생장식의 mm 기준 적합계수는 과학적 추적성을 위해 변경하지 않는다.
+계산 서비스가 식 평가 직전에만 RCD(cm)를 원 식의 입력 단위로 변환하므로 기존 탄소량
+결과는 유지된다.
+
+계산 전에는 교목과 관목의 식재 면적 합계를 설정된 대상지 면적과 비교한다. 버전 1.0은
+입력 보호용 기본값으로 교목 1개체당 1.00 m², 관목 1개체당 0.25 m²를 적용하며, 합계가
+대상지 면적을 초과하면 계산을 차단한다. 이 값은 잘못된 과다 입력을 방지하기 위한 설정값이며
+수종별 생태학적 식재 권고가 아니다.
+
+다중 대상지 비교에서는 총 탄소저장량과 면적 정규화 탄소밀도를 함께 제시한다. 공통 분석
+서비스는 각 대상지에 대해 `총 탄소저장량(kg C) / 대상지 면적(m²)`을 계산하고 그 결과를
+`kg C/m²`로 보고한다. 따라서 식재 인벤토리를 유지한 채 대상지 면적만 변경하면 총 탄소량은
+변하지 않고 정규화 분모와 탄소밀도만 달라진다. 비교 대시보드와 통합 XLSX 보고서는 총량과
+정규화 값을 쌍으로 된 차트와 수치 표에 함께 제공한다.
 
 ## 폴더 구조
 
@@ -22,9 +41,9 @@ MATLAB App Designer 원본(`Carbon_251002_5.mlapp` / `Carbon2_251013_1.mlapp`)�
 Code/
 ├── main.py                 ← 실행 진입점 (Carbon1·Carbon2 통합 탭 창)
 ├── build_exe.py             ← 핵심 소프트웨어 빌드 스크립트 (main.py → FORECAST-SW.exe)
-├── build_updater.py         ← 업데이터 빌드 스크립트 (updater_app.py → 수종데이터업데이터.exe)
-├── updater_app.py           ← 업데이터 앱 소스 (build_exe.py 로직을 내장 실행)
-├── updater_빌드.bat         ← build_updater.py 실행 배치 파일 (Windows)
+├── build_updater.py         ← Equation Library Manager 빌드 스크립트
+├── updater_app.py           ← Equation Library Manager 소스 (build_exe.py 로직 내장)
+├── build_library_manager.bat ← build_updater.py 실행 배치 파일 (Windows)
 ├── installer.iss            ← Inno Setup 설치 마법사(Setup.exe) 스크립트
 ├── requirements.txt         ← 실행 의존성 (PyQt5, matplotlib, numpy, openpyxl, Pillow)
 ├── species_data.json        ← 통합 수종 데이터 (교목·관목·국내·국외)
@@ -32,6 +51,7 @@ Code/
 └── carbon_calculator/       ← 기능별 핵심 패키지
     ├── data.py / data2.py          — 수종 계수·상대생장식 데이터
     ├── calculations.py             — 탄소저장량 계산 로직
+    ├── input_limits.py             — 교목·관목 합산 식재 면적 입력 보호
     ├── equation_eval.py            — 문자열 수식 평가
     ├── widgets.py / plotting.py    — 공용 UI 위젯 / 그래프
     ├── theme.py / font_config.py / ui_scale.py  — 테마·폰트·DPI 스케일
@@ -59,13 +79,18 @@ pip install -r requirements.txt
 
 ```powershell
 python main.py
+python main.py --lang en     # 영어로 바로 실행
+python main.py --lang ko     # 한국어로 바로 실행
 ```
 
 Carbon1(자생복원종)·Carbon2(국내·국외 통합)를 하나의 창에서 지역별 탭으로 관리하는 통합 UI가 뜬다.
+신규 FORECAST-SW v1.0 설정에서는 최초 언어 선택창과 기본 선택값이 영어로 표시된다.
+기존 CarbonStorageModule의 언어 설정은 가져오지 않으며, 사용자가 선택한 언어는
+FORECAST-SW v1.0 설정으로 별도 저장된다.
 
 ---
 
-## 2. 핵심 소프트웨어(FORECAST-SW) 빌드
+## 2. FORECAST-SW Assessment Application 빌드
 
 ```powershell
 python build_exe.py              # onefile (단일 exe, 배포 용이) — 기본
@@ -82,7 +107,7 @@ python build_exe.py --rebuild-venv       # 빌드 전용 venv 강제 재생성
 
 ---
 
-## 3. 수종데이터업데이터 빌드
+## 3. FORECAST-SW Equation Library Manager 빌드
 
 ```powershell
 python build_updater.py
@@ -91,13 +116,14 @@ python build_updater.py
 또는 Windows 배치로:
 
 ```powershell
-updater_빌드.bat
+build_library_manager.bat
 ```
 
-- 산출물: `dist\수종데이터업데이터.exe`
+- 산출물: `dist\FORECAST-SW-Equation-Library-Manager.exe`
 - 이 exe 는 `carbon_calculator` + `main.py` + `build_exe.py` 등 **핵심 소프트웨어의 전체 소스를
   내부에 번들**하고 있어, 소스 폴더 없이 이 exe 하나만 배포해도 동작한다.
-- 배포된 `수종데이터업데이터.exe` 는 실행 즉시 `species_data.json` 을 **표로 열어 편집**할 수 있다
+- 배포된 `FORECAST-SW-Equation-Library-Manager.exe`는 실행 즉시
+  `species_data.json`을 **표로 열어 편집**할 수 있다
   (교목·관목·국내·국외 4개 탭, 셀 더블클릭 수정, 수종 추가/삭제,
   저장 전 검증, 저장 시 `.bak` 백업). 큰 기본 글꼴과 고해상도 화면 배율, 확장된 표 행과
   입력 컨트롤, 4단계 작업 안내, 색상으로 구분된 주요 동작을 제공한다. 편집 후에는 두 가지
@@ -113,18 +139,22 @@ updater_빌드.bat
 
 일반 사용자 배포용으로 설치·시작메뉴·제거 기능이 있는 설치 프로그램을 만들고 싶다면:
 
-1. `python build_exe.py --onedir` 로 폴더형 빌드 (`dist\FORECAST-SW\` 생성)
-2. [Inno Setup 6](https://jrsoftware.org/isdl.php) 설치
-3. 다음 중 하나로 컴파일:
+1. `python build_exe.py --onedir`로 Assessment Application 폴더형 빌드
+   (`dist\FORECAST-SW\` 생성)
+2. `python build_updater.py`로 Equation Library Manager 빌드
+3. [Inno Setup 6](https://jrsoftware.org/isdl.php) 설치
+4. 다음 중 하나로 컴파일:
    - Inno Setup Compiler 에서 `installer.iss` 열고 `Build > Compile`
    - 명령줄: `"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss`
-4. 산출물: `installer_output\FORECAST-SW_Setup_1.0.exe`
+5. 산출물: `installer_output\FORECAST-SW_Setup_1.0.exe`. 설치본에는 두 실행 파일이
+   모두 포함되며, 시작 메뉴에 역할별 영문 바로가기가 생성된다.
 
 ---
 
 ## 5. 수종 데이터 갱신
 
-`수종데이터업데이터.exe` 의 표 편집기에서 수종·계수·식·범위를 고쳐 저장하거나(권장),
+`FORECAST-SW-Equation-Library-Manager.exe`의 표 편집기에서 수종·계수·식·범위를
+고쳐 저장하거나(권장),
 `species_data.json` 을 직접 수정한 뒤 `python build_exe.py` 로 재빌드한다.
 이미 배포된 exe 에는 위 3번의 방식으로 반영한다. 새 수종을 추가할 때는 학명 열도 채워야
 영문 모드에서 학명으로 표기된다.

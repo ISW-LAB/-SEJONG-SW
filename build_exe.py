@@ -398,7 +398,7 @@ def _write_spec(onedir: bool, debug: bool, upx: bool) -> Path:
         spec_dir,
         internal_name=APP_NAME,
         original_filename=f"{APP_NAME}{_EXE_EXT}",
-        file_description="FORECAST-SW forest carbon estimation and scenario analysis",
+        file_description="FORECAST-SW Assessment Application",
     )
     version_line = f"version={repr(str(version_file))}," if version_file else "# version=None"
 

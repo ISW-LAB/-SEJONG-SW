@@ -24,7 +24,7 @@ payload 구조 (단일 지역)::
     }
 
     category_dict = {
-      "unit": "cm" | "mm",
+      "unit": "cm",
       "total": float,
       "total_qty": int,
       "rows": [ {species, diameter, quantity, carbon, checked,
@@ -349,14 +349,14 @@ def _sheet_all_contributions(wb: Workbook, payloads: list) -> None:
 
 
 def _sheet_comparison(wb: Workbook, comparison_data: list) -> None:
-    """지역_비교분석: 지역별 총 탄소저장량 비교 테이블."""
+    """지역_비교분석: 총 탄소량과 면적 정규화 탄소밀도 비교 테이블."""
     ws = wb.create_sheet(tr("지역_비교분석"))
 
-    ws.cell(1, 1, tr("지역별 총 탄소저장량 비교 분석")).font = TITLE_FONT
+    ws.cell(1, 1, tr("지역별 탄소저장량 및 면적 정규화 비교 분석")).font = TITLE_FONT
     ws.merge_cells("A1:G1")
 
     headers = [tr("지역명"), tr("면적(㎡)"), tr("대상지 유형"), tr("교목(kgC)"), tr("관목(kgC)"),
-               tr("총 탄소저장량(kgC)"), tr("단위면적당(kgC/㎡)")]
+               tr("총 탄소저장량(kgC)"), tr("면적 정규화\n탄소밀도(kgC/㎡)")]
     for c, h in enumerate(headers, 1):
         ws.cell(2, c, h)
     _style_header_row(ws, 2, len(headers))
@@ -389,7 +389,7 @@ def _sheet_comparison(wb: Workbook, comparison_data: list) -> None:
 
 
 def _render_comparison_chart_png(comparison_data: list):
-    """지역별 탄소저장량 비교 막대 차트를 PNG 바이트로 렌더링 (Agg 백엔드, Qt 불필요)."""
+    """총 탄소량과 면적 정규화 탄소밀도를 2패널 PNG로 렌더링한다."""
     if not comparison_data:
         return None
     try:
@@ -404,35 +404,73 @@ def _render_comparison_chart_png(comparison_data: list):
             pass
 
         names      = [d["name"]  for d in comparison_data]
-        tree_vals  = [d["tree"]  for d in comparison_data]
-        shrub_vals = [d["shrub"] for d in comparison_data]
-        totals     = [t + s for t, s in zip(tree_vals, shrub_vals)]
+        totals = [d["total"] for d in comparison_data]
+        densities = [d["density"] for d in comparison_data]
 
-        fig    = Figure(figsize=(12, 5), layout="constrained")
+        fig = Figure(figsize=(14, 5))
         canvas = FigureCanvasAgg(fig)
-        ax     = fig.add_subplot(111)
+        stock_ax = fig.add_subplot(121)
+        density_ax = fig.add_subplot(122)
+        fig.subplots_adjust(left=0.07, right=0.86, bottom=0.15, top=0.88, wspace=0.34)
 
         cmap    = plt.get_cmap("tab10")
         hatches = ["//", "\\\\", "..", "xx", "++", "oo", "--", "**", "||"]
+        legend_handles = []
 
-        for i, (tot, name) in enumerate(zip(totals, names)):
-            ax.bar(i, tot, width=0.7,
-                   color=cmap(i % 10), hatch=hatches[i % len(hatches)],
-                   edgecolor="white", linewidth=0.8, label=name)
+        for axis, values, decimals, ylabel, title in (
+            (
+                stock_ax,
+                totals,
+                1,
+                tr("탄소저장량 (kgC)"),
+                tr("지역별 총 탄소저장량 비교"),
+            ),
+            (
+                density_ax,
+                densities,
+                4,
+                tr("면적 정규화 탄소밀도 (kgC/㎡)"),
+                tr("지역별 면적 정규화 탄소밀도"),
+            ),
+        ):
+            top = max(values) if values else 0.0
+            for i, (value, name) in enumerate(zip(values, names)):
+                bars = axis.bar(
+                    i,
+                    value,
+                    width=0.7,
+                    color=cmap(i % 10),
+                    hatch=hatches[i % len(hatches)],
+                    edgecolor="white",
+                    linewidth=0.8,
+                    label=name,
+                )
+                if axis is stock_ax:
+                    legend_handles.append(bars[0])
+                axis.text(
+                    i,
+                    value + (top * 0.01 if top else 0.0),
+                    f"{value:,.{decimals}f}",
+                    ha="center",
+                    va="bottom",
+                    fontsize=10,
+                    fontweight="bold",
+                )
+            axis.set_xticks([])
+            axis.set_ylabel(ylabel)
+            axis.set_ylim(0, top * 1.18 if top > 0 else 1.0)
+            axis.set_title(title, fontweight="bold")
+            axis.grid(True, axis="y", alpha=0.3)
 
-        top = max(totals) if totals else 1.0
-        for i, tot in enumerate(totals):
-            ax.text(i, tot + (top * 0.01 if top else 0.0), f"{tot:,.1f}",
-                    ha="center", va="bottom", fontsize=11, fontweight="bold")
-
-        ax.set_xticks([])
-        ax.set_ylabel(tr("탄소저장량 (kgC)"))
-        ax.set_ylim(0, top * 1.15 if top > 0 else 1.0)
-        ax.set_title(tr("지역별 총 탄소저장량 비교"), fontweight="bold")
-        ncol = 1 + (len(names) - 1) // 12
-        ax.legend(title=tr("지역"), loc="upper left", bbox_to_anchor=(1.01, 1.0),
-                  fontsize=10, framealpha=0.95, borderaxespad=0.0, ncol=max(1, ncol))
-        ax.grid(True, axis="y", alpha=0.3)
+        fig.legend(
+            legend_handles,
+            names,
+            title=tr("지역"),
+            loc="center right",
+            bbox_to_anchor=(0.995, 0.5),
+            fontsize=10,
+            framealpha=0.95,
+        )
 
         buf = io.BytesIO()
         canvas.print_png(buf)
@@ -455,7 +493,7 @@ def _sheet_all_graphs(wb: Workbook, payloads: list, comparison_data: list) -> No
     # 1) 지역 비교 막대 차트
     cmp_png = _render_comparison_chart_png(comparison_data)
     if cmp_png:
-        ws.cell(row, 1, tr("지역별 탄소저장량 비교")).font = TITLE_FONT
+        ws.cell(row, 1, tr("지역별 총량 및 면적 정규화 비교")).font = TITLE_FONT
         try:
             img = XLImage(io.BytesIO(cmp_png))
             target_w   = 900

@@ -31,6 +31,8 @@ EN: dict[str, str] = {
     "관목": "Shrub",
     "국내": "Domestic",
     "국외": "International",
+    "[국내] {name}": "[Domestic] {name}",
+    "[국외] {name}": "[International] {name}",
     "그래프": "Figures",
     "기여도": "Contribution",
     "전체 선택": "Select all",
@@ -138,6 +140,17 @@ EN: dict[str, str] = {
     "비교 분석할 지역을 선택하세요 (2개 이상 권장):":
         "Select the sites to compare (two or more recommended):",
     "지역별 탄소저장량 비교": "Carbon storage by site",
+    "지역별 면적 정규화 탄소밀도": "Area-normalized carbon density by site",
+    "면적 정규화 탄소밀도 (kgC/㎡)":
+        "Area-normalized carbon density (kg C/m²)",
+    "프로필별 식재 구성 및 탄소저장량 비교":
+        "Planting composition and carbon storage by profile",
+    "{n}개 프로필 · 공통 대상지 면적 {area:,.0f} m²":
+        "{n} profiles · common site area {area:,.0f} m²",
+    "{n}개 프로필 · 동일 총 탄소량 {total:,.2f} kgC · "
+    "대상지 면적 {min_area:,.0f}–{max_area:,.0f} m²":
+        "{n} profiles · invariant total carbon stock {total:,.2f} kgC · "
+        "site area {min_area:,.0f}–{max_area:,.0f} m²",
     "총 {n}개 지역 · 전체 합계 {total:,.2f} kgC":
         "{n} sites · grand total {total:,.2f} kgC",
     "   |   최대: {name} ({total:,.2f} kgC)":
@@ -156,10 +169,27 @@ EN: dict[str, str] = {
 
     # ══════════════════ 표 머리글 ══════════════════
     "면적(㎡)": "Area (m²)",
+    "교목\n개수 | 식재면적(㎡)": "Trees\ncount | planting area (m²)",
+    "관목\n개수 | 식재면적(㎡)": "Shrubs\ncount | planting area (m²)",
+    "필요면적 / 대상지면적(㎡)": "Required / site area (m²)",
     "교목(kgC)": "Trees (kgC)",
     "관목(kgC)": "Shrubs (kgC)",
     "총 탄소저장량(kgC)": "Total carbon storage (kgC)",
     "단위면적당(kgC/㎡)": "Per unit area (kgC/m²)",
+    "면적 정규화 탄소밀도\n(kgC/㎡)":
+        "Area-normalized carbon density\n(kg C/m²)",
+    "면적 정규화\n탄소밀도(kgC/㎡)":
+        "Area-normalized\ncarbon density (kg C/m²)",
+    "교목·관목 열은 유효 개체 수 | 설정된 식재면적을 나타냅니다. "
+    "식재면적은 입력 보호용 값이며 수종별 식재 권고가 아닙니다.":
+        "Tree and shrub columns report accepted count | configured planting area. "
+        "Planting areas are input safeguards, not species-specific recommendations.",
+    "면적 정규화 탄소밀도는 총 탄소저장량을 대상지 면적으로 나눈 값입니다. "
+    "교목·관목 열은 유효 개체 수 | 설정된 식재면적을 나타냅니다. "
+    "식재면적은 입력 보호용 값이며 수종별 식재 권고가 아닙니다.":
+        "Area-normalized carbon density equals total carbon stock divided by site area. "
+        "Tree and shrub columns report accepted count | configured planting area. "
+        "Planting areas are input safeguards, not species-specific recommendations.",
     "탄소량(kgC)": "Carbon (kgC)",
     "비율(%)": "Share (%)",
     "변수값": "Variable value",
@@ -212,24 +242,35 @@ EN: dict[str, str] = {
 
     # ══════════════════ 입력 검증 ══════════════════
     "유효 직경 범위 아님": "Diameter outside valid range",
-    "입력한 직경 {d:g}{u} 은(는) '{species}'의 유효 범위({vmin:g}{u} ~ {vmax:g}{u})를 "
+    "입력한 직경 {d:g} {u} 은(는) '{species}'의 유효 범위({vmin:g} {u} ~ {vmax:g} {u})를 "
     "벗어납니다.\n\n값을 유효 범위 안으로 수정한 뒤 다시 [추가]를 눌러 주세요.":
-        "The entered diameter {d:g}{u} is outside the valid range for '{species}' "
-        "({vmin:g}{u} – {vmax:g}{u}).\n\nAdjust the value to fall within the range and "
+        "The entered diameter {d:g} {u} is outside the valid range for '{species}' "
+        "({vmin:g} {u} – {vmax:g} {u}).\n\nAdjust the value to fall within the range and "
         "press [Add] again.",
-    "{species}의 유효 직경 범위는 {vmin:g}{unit} ~ {vmax:g}{unit} 입니다.":
-        "The valid diameter range for {species} is {vmin:g}{unit} – {vmax:g}{unit}.",
-    "{species}: 유효 범위 {vmin:g}~{vmax:g}{unit} 밖의 입력은 제외됨":
-        "{species}: input outside the valid range {vmin:g}–{vmax:g}{unit} was excluded",
+    "{species}의 유효 직경 범위는 {vmin:g} {unit} ~ {vmax:g} {unit} 입니다.":
+        "The valid diameter range for {species} is {vmin:g} {unit} – {vmax:g} {unit}.",
+    "{species}: 유효 범위 {vmin:g}~{vmax:g} {unit} 밖의 입력은 제외됨":
+        "{species}: input outside the valid range {vmin:g}–{vmax:g} {unit} was excluded",
     "입력값 오류 (해당 행 제외)": "Invalid input (row excluded)",
     "입력값 오류": "Invalid input",
-    "대량 입력 경고": "Large input warning",
-    "교목 총 개수가 {n:,}주로 1,000주를 초과합니다.":
-        "The total number of trees ({n:,}) exceeds 1,000.",
-    "관목 총 개수가 {n:,}주로 1,000주를 초과합니다.":
-        "The total number of shrubs ({n:,}) exceeds 1,000.",
-    "\n\n계산은 정상적으로 수행되었습니다.":
-        "\n\nThe calculation completed normally.",
+    "식재 면적 입력 한도": "Planting-area input limit",
+    "교목과 관목의 식재 면적 합계가 설정된 대상지 면적을 초과합니다.\n\n"
+    "대상지 면적: {site_area:,.2f} m²\n"
+    "교목: {tree_quantity:,}개체 × {tree_unit_area:.2f} m² = {tree_area:,.2f} m²\n"
+    "관목: {shrub_quantity:,}개체 × {shrub_unit_area:.2f} m² = {shrub_area:,.2f} m²\n"
+    "필요 식재 면적: {required_area:,.2f} m²\n"
+    "초과 면적: {excess_area:,.2f} m²\n\n"
+    "개체 수를 줄이거나 대상지 면적을 늘려 주세요. 계산은 수행되지 않았습니다.\n"
+    "개체당 기본 식재 면적은 입력 오류 방지를 위한 설정값이며 수종별 식재 권고가 아닙니다.":
+        "The combined planting area for trees and shrubs exceeds the configured site area.\n\n"
+        "Site area: {site_area:,.2f} m²\n"
+        "Trees: {tree_quantity:,} individuals × {tree_unit_area:.2f} m² = {tree_area:,.2f} m²\n"
+        "Shrubs: {shrub_quantity:,} individuals × {shrub_unit_area:.2f} m² = {shrub_area:,.2f} m²\n"
+        "Required planting area: {required_area:,.2f} m²\n"
+        "Excess area: {excess_area:,.2f} m²\n\n"
+        "Reduce the inventory count or increase the site area. The calculation was not performed.\n"
+        "The per-individual planting areas are configurable input safeguards, not "
+        "species-specific planting recommendations.",
     "{species} 의 유효 {label} 범위는 {vmin:g} ~ {vmax:g} 입니다. (입력: {value:g})":
         "The valid {label} range for {species} is {vmin:g} – {vmax:g}. "
         "(entered: {value:g})",
@@ -257,7 +298,7 @@ EN: dict[str, str] = {
     "관목 기여도": "Shrub contribution",
     "시각화": "3D view",
     "교목 결과 (DBH·cm)": "Tree results (DBH, cm)",
-    "관목 결과 (RCD·mm)": "Shrub results (RCD, mm)",
+    "관목 결과 (RCD·cm)": "Shrub results (RCD, cm)",
     "국내 결과": "Domestic results",
     "국외 결과": "International results",
     "수종별 탄소저장량 기여도": "Carbon storage contribution by species",
@@ -338,6 +379,10 @@ EN: dict[str, str] = {
     "지역별 수종 탄소 기여도": "Species carbon contribution by site",
     "지역별 총 탄소저장량 비교 분석": "Comparison of total carbon storage by site",
     "지역별 총 탄소저장량 비교": "Total carbon storage by site",
+    "지역별 탄소저장량 및 면적 정규화 비교 분석":
+        "Comparison of total and area-normalized carbon stock by site",
+    "지역별 총량 및 면적 정규화 비교":
+        "Total and area-normalized carbon comparison by site",
     "── {name} 지역 ──": "── Site: {name} ──",
     "교목 향후 50년 탄소저장량 변동 추정":
         "Projected tree carbon storage over 50 years",

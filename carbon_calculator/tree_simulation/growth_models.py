@@ -16,14 +16,12 @@ from .species_profiles import SpeciesRenderProfile, growth_sensitivity, profile_
 VISUAL_FALLBACK_SOURCE = "Carbon1 3D visual fallback (not a scientific height/crown model)"
 
 
-def diameter_timeline(species_data, starting_diameter: float, *, years: int = 50,
-                      mm_scale: bool = False) -> np.ndarray:
-    """Carbon1 project_future_carbon과 같은 규칙으로 직경 timeline을 만든다."""
-    scale = 10.0 if mm_scale else 1.0
+def diameter_timeline(species_data, starting_diameter: float, *, years: int = 50) -> np.ndarray:
+    """DBH/RCD 공통 cm 계약으로 직경 timeline을 만든다."""
     values = np.zeros(years + 1, dtype=float)
     values[0] = starting_diameter
     for year in range(1, years + 1):
-        values[year] = values[year - 1] + species_data.growth_at_year(year) * scale
+        values[year] = values[year - 1] + species_data.growth_at_year(year)
     return values
 
 
@@ -52,8 +50,8 @@ def rendered_height(species: str, diameter_value: float, diameter_unit: str,
                     profile: SpeciesRenderProfile, kind: str,
                     elapsed_year: int = 0, initial_diameter: float | None = None) -> ModelValue:
     initial = diameter_value if initial_diameter is None else initial_diameter
-    unit_scale = 100.0 if diameter_unit == "cm" else 1000.0
-    base_height = _base_visual_height(initial / unit_scale, profile, kind)
+    del diameter_unit  # 공개 시각화 입력은 DBH/RCD 모두 cm이다.
+    base_height = _base_visual_height(initial / 100.0, profile, kind)
     ratio = diameter_growth_ratio(diameter_value, initial)
     sensitivity = growth_sensitivity(kind)
     visual_height = min(
@@ -108,9 +106,8 @@ def render_states(snapshot: RegionVisualizationSnapshot, year: int) -> tuple[Ren
         group = groups[instance.group_id]
         profile = profile_by_key(group.profile_key)
         diameter = float(group.diameter_by_year[year])
-        diameter_m = diameter / (100.0 if group.diameter_unit == "cm" else 1000.0)
-        unit_scale = 100.0 if group.diameter_unit == "cm" else 1000.0
-        initial_diameter_m = group.initial_diameter / unit_scale
+        diameter_m = diameter / 100.0
+        initial_diameter_m = group.initial_diameter / 100.0
         growth_ratio = diameter_growth_ratio(diameter, group.initial_diameter)
         height = rendered_height(
             group.species, diameter, group.diameter_unit, profile, group.kind, year,

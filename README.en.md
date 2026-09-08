@@ -2,21 +2,47 @@
 
 A PyQt5 port of the original MATLAB App Designer application
 (`Carbon_251002_5.mlapp` / `Carbon2_251013_1.mlapp`). The project builds two
-executables: **FORECAST-SW** (the core software) and the
-**species data updater**, which applies a new species dataset and rebuilds the
-core executable.
+executables: the **FORECAST-SW Assessment Application** (`FORECAST-SW.exe`) and
+the **FORECAST-SW Equation Library Manager**
+(`FORECAST-SW-Equation-Library-Manager.exe`). The manager edits, validates,
+backs up, and deploys allometric equation records used by the assessment
+application.
 
 The version 1.0 scientific library separates its user-facing and compatibility
 coverage. The primary site-assessment workflow exposes **22 native records**
 (seven tree and 15 shrub records). A further **55 compatibility records**
-(30 domestic and 25 international records) are maintained in the updater and
-equation evaluator but are not selectable in the primary workflow. Together,
+(30 domestic and 25 international records) are maintained in the Equation
+Library Manager and equation evaluator but are not selectable in the primary
+workflow. Together,
 the 77 named records implement 79 executable equations. This distinction is
 important when interpreting the software's current operational coverage.
 
 The site category stored with each project is descriptive metadata. It does
 not select or modify the allometric coefficients in this release; every site
 uses the species-level default record from the validated library.
+
+All user-facing diameter inputs and outputs use centimetres: tree diameter at
+breast height (DBH) and shrub root-collar diameter (RCD) are reported in cm in
+the interface, tables, plots, visualizations, and XLSX files. The 15 legacy
+shrub equations retain their original millimetre-based fitted coefficients for
+scientific traceability. The analytical adapter converts RCD from cm to the
+equation-native predictor only at evaluation, so existing carbon estimates are
+unchanged.
+
+Before calculation, the assessment application validates the mixed inventory
+against the configured site area. Version 1.0 assigns input-guard footprints
+of 1.00 m² per tree and 0.25 m² per shrub and blocks the calculation when their
+combined requirement exceeds the site area. These configurable values prevent
+accidental over-entry; they are not species-specific planting recommendations.
+
+The multi-site comparison reports both total carbon stock and area-normalized
+carbon density. For each site, the shared analytical service calculates
+`total carbon (kg C) / site area (m²)` and reports the result in `kg C/m²`.
+Changing site area alone therefore changes the normalization denominator but
+does not rescale the submitted inventory or its total carbon stock. The
+dashboard and combined XLSX report present total stock and normalized density
+as paired charts and retain the underlying numerical values in the comparison
+table.
 
 The interface, figures and Excel output are available in **Korean and English**.
 In English mode every species is labelled with its scientific name
@@ -28,9 +54,9 @@ manuscript.
 ```
 ├── main.py                  ← entry point (Carbon1 · Carbon2 in one tabbed window)
 ├── build_exe.py             ← builds the core software (main.py → module executable)
-├── build_updater.py         ← builds the updater (updater_app.py → updater executable)
-├── updater_app.py           ← updater application (runs build_exe.py logic internally)
-├── updater_빌드.bat         ← Windows batch wrapper for build_updater.py
+├── build_updater.py         ← builds the Equation Library Manager
+├── updater_app.py           ← manager application (runs build_exe.py logic internally)
+├── build_library_manager.bat ← Windows batch wrapper for build_updater.py
 ├── 실행_rudckd.bat          ← Windows batch launcher (conda env, dependency check, run)
 ├── installer.iss            ← Inno Setup script for a Windows installer
 ├── requirements.txt         ← runtime dependencies
@@ -39,6 +65,7 @@ manuscript.
 └── carbon_calculator/       ← core package
     ├── data.py / data2.py          — species coefficients and allometric equations
     ├── calculations.py             — carbon storage calculation
+    ├── input_limits.py             — combined tree/shrub planting-area safeguard
     ├── equation_eval.py            — evaluation of equations given as strings
     ├── widgets.py / plotting.py    — shared widgets / figures
     ├── theme.py / font_config.py / ui_scale.py  — theme, fonts, DPI scaling
@@ -86,13 +113,15 @@ python main.py --lang ko     # start in Korean
 Carbon1 (native restoration species) and Carbon2 (domestic and international
 species) are managed as per-site tabs in a single window.
 
-On first start the application asks for a display language. The choice is stored
-and reused; it can be changed at any time from the **Language** menu, which
-restarts the application in the selected language.
+On first start the application presents an English-language selection dialog
+with **English** selected by default. The choice is stored under the FORECAST-SW
+v1.0 settings key and reused; it can be changed at any time from the
+**Language** menu, which restarts the application in the selected language.
+Legacy language preferences from pre-FORECAST-SW builds are not imported.
 
 ---
 
-## 2. Build the core software
+## 2. Build the FORECAST-SW Assessment Application
 
 ```powershell
 python build_exe.py              # onefile (single executable) — default
@@ -114,7 +143,7 @@ python build_exe.py --rebuild-venv       # force re-creation of the build venv
 
 ---
 
-## 3. Build the species data updater
+## 3. Build the FORECAST-SW Equation Library Manager
 
 ```powershell
 python build_updater.py
@@ -123,10 +152,10 @@ python build_updater.py
 or, on Windows:
 
 ```powershell
-updater_빌드.bat
+build_library_manager.bat
 ```
 
-- Output: `dist/수종데이터업데이터.exe`
+- Output: `dist/FORECAST-SW-Equation-Library-Manager.exe`
 - This executable bundles the **entire source** of the core software
   (`carbon_calculator`, `main.py`, `build_exe.py`, ...), so it can be distributed
   on its own.
@@ -145,22 +174,25 @@ updater_빌드.bat
 
 ## 4. Windows installer — optional
 
-1. Build in folder form: `python build_exe.py --onedir`
-2. Install [Inno Setup 6](https://jrsoftware.org/isdl.php)
-3. Compile with either
+1. Build the Assessment Application in folder form: `python build_exe.py --onedir`
+2. Build the Equation Library Manager: `python build_updater.py`
+3. Install [Inno Setup 6](https://jrsoftware.org/isdl.php)
+4. Compile with either
    - Inno Setup Compiler: open `installer.iss`, then `Build > Compile`, or
    - the command line: `"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss`
-4. Output: `installer_output/FORECAST-SW_Setup_1.0.exe`
+5. Output: `installer_output/FORECAST-SW_Setup_1.0.exe`. The installer includes
+   both executables and creates separate Start-menu shortcuts for their roles.
 
 ---
 
 ## 5. Updating the species dataset
 
-Edit species, coefficients, equations and ranges in the table editor of the updater
-(`수종데이터업데이터.exe`) and save (recommended), or edit `species_data.json` by hand and
-rebuild with `python build_exe.py`. Apply it to an already-distributed executable through
-the updater (section 3). When adding a species, fill in the scientific-name column so that
-English mode can label it.
+Edit species, coefficients, equations, and ranges in the FORECAST-SW Equation
+Library Manager (`FORECAST-SW-Equation-Library-Manager.exe`) and save
+(recommended), or edit `species_data.json` by hand and rebuild with
+`python build_exe.py`. Apply it to an already distributed Assessment Application
+through the manager (Section 3). When adding a species, fill in the
+scientific-name column so that English mode can label it.
 
 `species_data.json` also carries the English labels:
 
@@ -188,7 +220,8 @@ The suite checks release-library counts, JSON parsing and data licensing,
 site-category invariance, the allometric calculation, exact stem-count
 scaling, inclusive diameter boundaries, deterministic year-zero scenarios,
 shrub unit conversion, every compatibility equation, and rejection of unsafe
-equation syntax. The same suite runs on Windows with Python 3.10 and 3.11
+equation syntax. It also verifies acceptance at the site-area boundary and
+rejection when the combined tree and shrub footprint exceeds it. The same suite runs on Windows with Python 3.10 and 3.11
 through the repository's continuous-integration workflow. The evaluated
 Windows build environment and local artifact checksums are recorded in
 [BUILD_VERIFICATION.md](BUILD_VERIFICATION.md).

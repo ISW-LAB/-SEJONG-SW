@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MIT
 # -*- coding: utf-8 -*-
 """
-수종 데이터 업데이터 (자체 완결형).
+FORECAST-SW Equation Library Manager (self-contained).
 
 이 프로그램은 **FORECAST-SW(main.py)의 전체 코드 로직을 내부에 내장**하고
 있어, 소스 폴더 없이 이 exe 하나만으로 새 수종 데이터(JSON)를 반영한 실행파일을
@@ -22,7 +22,7 @@ JSON 양식:  species_data.json (통합본 — 교목·관목·국내·국외 4�
 
 실행:
     python updater_app.py        (개발 모드)
-    수종데이터업데이터.exe        (배포 모드 — 단독 실행)
+    FORECAST-SW-Equation-Library-Manager.exe  (배포 모드 — 단독 실행)
 """
 from __future__ import annotations
 
@@ -57,7 +57,7 @@ _SETTINGS_KEY = "language"
 
 _EN: dict[str, str] = {
     "수종 데이터 업데이터 (자체 완결형) - FORECAST-SW v{version}":
-        "Species Data Updater (self-contained) - FORECAST-SW v{version}",
+        "FORECAST-SW Equation Library Manager (self-contained, v{version})",
     "수종 데이터 JSON (통합 species_data.json)":
         "Species data JSON (combined species_data.json)",
     "— 파일을 선택하면 검증됩니다": "— select a file to validate it",
@@ -67,13 +67,13 @@ _EN: dict[str, str] = {
     "파일/폴더 경로를 선택하거나 직접 입력하세요":
         "Choose a file or folder, or type a path",
     "① exe 재빌드   —   내장 소스로 새 FORECAST-SW.exe 생성 (권장)":
-        "① Rebuild executable — build a new FORECAST-SW executable from the bundled "
+        "① Rebuild Assessment Application — build a new FORECAST-SW executable from the bundled "
         "sources (recommended)",
     "이 업데이터에 내장된 전체 코드 로직을 사용해 JSON 이 반영된 새 exe 를 만듭니다. "
     "소스 폴더가 옆에 없어도 됩니다.\n"
     "※ 컴파일에는 이 PC 에 Python 3.10 이상이 필요합니다 (최초 1회 빌드 환경 자동 구성).":
         "Builds a new executable with the new JSON applied, using the complete source "
-        "bundled inside this updater. No source folder is required alongside it.\n"
+        "bundled inside this manager. No source folder is required alongside it.\n"
         "Note: compiling requires Python 3.10 or later on this machine (the build "
         "environment is created automatically on first use).",
     "출력 폴더 (exe 저장 위치)": "Output folder (where the executable is written)",
@@ -90,24 +90,24 @@ _EN: dict[str, str] = {
     "JSON 오류: {msg}": "JSON error: {msg}",
     "출력 폴더를 지정하세요.": "Specify an output folder.",
     "② JSON 적용   —   기존 exe 옆에 복사만 (Python 불필요)":
-        "② Apply JSON — copy it next to an existing executable (no Python required)",
+        "② Apply JSON — deploy it to an existing Assessment Application (no Python required)",
     "이미 만들어진 FORECAST-SW.exe 가 있다면, 그 옆에 JSON 을 복사해 "
     "다음 실행 시 즉시 반영합니다. 재빌드가 필요 없을 때 사용하세요.":
         "If a built executable already exists, the JSON is copied next to it and takes "
         "effect the next time it runs. Use this when a rebuild is unnecessary.",
-    "FORECAST-SW.exe 위치": "Location of the FORECAST-SW executable",
+    "FORECAST-SW.exe 위치": "Location of the FORECAST-SW Assessment Application",
     "찾기...": "Browse...",
     "JSON 적용 (복사)": "Apply JSON (copy)",
     "완료 — JSON 복사됨": "Done — JSON copied",
     "JSON 검증에 실패했습니다 (상단 상태 확인).":
         "JSON validation failed (see the status above).",
     "FORECAST-SW.exe 위치를 선택하세요.":
-        "Select the location of the FORECAST-SW executable.",
+        "Select the location of the FORECAST-SW Assessment Application.",
     "로그": "Log",
     "통합 species_data.json 선택": "Select the combined species_data.json",
     "JSON 파일 (*.json)": "JSON file (*.json)",
     "출력 폴더 선택": "Select output folder",
-    "FORECAST-SW.exe 선택": "Select the FORECAST-SW executable",
+    "FORECAST-SW.exe 선택": "Select the FORECAST-SW Assessment Application",
     "실행 파일 (*.exe)": "Executable (*.exe)",
     # 검증 결과
     "JSON 파싱 오류: {error}": "JSON parse error: {error}",
@@ -121,7 +121,7 @@ _EN: dict[str, str] = {
     "Python 인터프리터를 찾을 수 없습니다. Python 3.10+ 를 설치하세요.":
         "No Python interpreter found. Please install Python 3.10 or later.",
     "내장 소스를 찾을 수 없습니다: {path}\nupdater 를 build_updater.py 로 다시 빌드하세요.":
-        "Bundled sources not found: {path}\nRebuild the updater with build_updater.py.",
+        "Bundled sources not found: {path}\nRebuild the Equation Library Manager with build_updater.py.",
     "[1/4] 작업폴더 준비: {path}": "[1/4] Preparing work folder: {path}",
     "[2/4] 수종 데이터 적용: {src} → {dst}":
         "[2/4] Applying species data: {src} → {dst}",
@@ -138,7 +138,7 @@ _EN: dict[str, str] = {
     "[완료] {name} → {path}": "[Done] {name} → {path}",
     "[정리] 구버전 JSON 제거: {names}": "[Cleanup] removed legacy JSON: {names}",
     "FORECAST-SW.exe 를 다시 실행하면 새 수종 데이터가 적용됩니다.":
-        "Restart FORECAST-SW to load the new species data.",
+        "Restart the FORECAST-SW Assessment Application to load the new species data.",
     # 언어 선택
     "언어 / Language": "Language",
     "한국어": "한국어",
@@ -152,7 +152,6 @@ _EN: dict[str, str] = {
     "국외 수종 (FOREIGN_SPECIES)": "International species (FOREIGN_SPECIES)",
     "수종명": "Species name", "학명": "Scientific name",
     "최소직경(cm)": "Min diameter (cm)", "최대직경(cm)": "Max diameter (cm)",
-    "최소직경(mm)": "Min diameter (mm)", "최대직경(mm)": "Max diameter (mm)",
     "성장률(~10y)": "Growth rate (~10 y)", "성장률(11~20y)": "Growth rate (11–20 y)",
     "성장률(21y~)": "Growth rate (21 y~)",
     "상대생장식": "Allometric equation", "범위 최소": "Range min", "범위 최대": "Range max",
@@ -163,6 +162,10 @@ _EN: dict[str, str] = {
         "Double-click a cell to edit · leave the range blank for 'no range check' · leave the "
         "variable-2 label blank for a single-variable equation · equations use X (first variable), "
         "H (second variable), ^, ln and exp",
+    "모든 표시 직경은 cm입니다 · 교목식은 X=DBH(cm), 기존 관목식은 계수를 보존하여 "
+    "X=10×RCD(cm)로 평가합니다":
+        "All displayed diameters use cm · tree equations use X = DBH (cm), whereas legacy "
+        "shrub coefficients are preserved and evaluated with X = 10 × RCD (cm)",
     "+ 새 수종 추가": "+ Add new species", "선택 삭제": "Delete selected",
     "JSON 파일로 저장": "Save to JSON file",
     "— JSON 파일을 선택하면 여기에 표시됩니다": "— select a JSON file to show it here",
@@ -204,12 +207,12 @@ _EN: dict[str, str] = {
         "Yes = save then continue · No = continue with the file as it is on disk · Cancel = stop",
     "편집 중인 내용을 버리고 새 파일을 불러올까요?": "Discard the current edits and load the new file?",
     "화면 배율": "Zoom",
-    "수종 데이터 업데이터": "Species Data Updater",
+    "수종 데이터 업데이터": "FORECAST-SW Equation Library Manager",
     "JSON을 열고 수종·계수를 검토한 뒤 저장하여 FORECAST-SW에 적용합니다.":
-        "Open the JSON, review species and coefficients, then save and apply it to FORECAST-SW.",
+        "Open the JSON, review species and coefficients, then save and deploy it to the Assessment Application.",
     "작업 순서: 1. JSON 열기  →  2. 수종·계수 편집  →  3. 저장·검증  →  4. exe 재빌드 또는 JSON 적용":
         "Workflow: 1. Open JSON  →  2. Edit species and coefficients  →  "
-        "3. Save and validate  →  4. Rebuild the executable or apply JSON",
+        "3. Save and validate  →  4. Rebuild the Assessment Application or apply JSON",
     "화면 배율을 조정합니다": "Adjust the interface zoom.",
 }
 
@@ -716,7 +719,7 @@ _TREE_COLS = [
 ]
 _SHRUB_COLS = [
     ("수종명", "name"), ("학명", "sci"), ("a", "a"), ("b", "b"), ("CF", "cf"),
-    ("최소직경(mm)", "dmin"), ("최대직경(mm)", "dmax"),
+    ("최소직경(cm)", "dmin"), ("최대직경(cm)", "dmax"),
     ("성장률(~10y)", "g10"), ("성장률(11~20y)", "g20"), ("성장률(21y~)", "g21"),
 ]
 _EQ_COLS = [
@@ -726,6 +729,20 @@ _EQ_COLS = [
     ("변수2 기본값", "v2def"),
 ]
 _ROLE_TRUE_NAME = Qt.UserRole + 1  # 수종명 셀이 학명으로 표시(영문 모드·읽기전용)될 때 실제 저장 키(국문)
+
+
+def _section_equation_unit(data: dict | None, section: str) -> str:
+    """Return the source-equation diameter unit declared by the JSON schema."""
+    schema = (data or {}).get("_schema")
+    schema = schema if isinstance(schema, dict) else {}
+    default = "mm" if section == _SECTION_SHRUB else "cm"
+    unit = schema.get(f"{section}_equation_diameter_unit", default)
+    return unit if unit in ("cm", "mm") else default
+
+
+def _display_scale(data: dict | None, section: str) -> float:
+    """Raw equation-domain value divided by this scale gives the displayed cm value."""
+    return 10.0 if _section_equation_unit(data, section) == "mm" else 1.0
 
 
 def _set_true_name(item, name: str) -> None:
@@ -856,8 +873,13 @@ class SpeciesEditor(QGroupBox):
         self.tabs.currentChanged.connect(self._sync_buttons)
         v.addWidget(self.tabs, 1)
 
-        hint = QLabel(tr("셀을 더블클릭해 수정합니다 · 범위를 비우면 '범위 검사 없음' · 변수2 라벨을 비우면 단일변수 식 · "
-                         "식은 X(첫 변수)·H(두 번째 변수)·^·ln·exp 를 사용합니다"))
+        hint = QLabel(
+            tr("모든 표시 직경은 cm입니다 · 교목식은 X=DBH(cm), 기존 관목식은 계수를 보존하여 "
+               "X=10×RCD(cm)로 평가합니다")
+            + "\n"
+            + tr("셀을 더블클릭해 수정합니다 · 범위를 비우면 '범위 검사 없음' · 변수2 라벨을 비우면 단일변수 식 · "
+                 "식은 X(첫 변수)·H(두 번째 변수)·^·ln·exp 를 사용합니다")
+        )
         hint.setWordWrap(True)
         hint.setStyleSheet(_note_css())
         v.addWidget(hint)
@@ -933,8 +955,14 @@ class SpeciesEditor(QGroupBox):
         try:
             self._data = data
             sci = data.get("SPECIES_EN") or {}
-            self._fill_coef_table(self.tables[_SECTION_TREE], data.get(_SECTION_TREE) or {}, sci, tree=True)
-            self._fill_coef_table(self.tables[_SECTION_SHRUB], data.get(_SECTION_SHRUB) or {}, sci, tree=False)
+            self._fill_coef_table(
+                self.tables[_SECTION_TREE], data.get(_SECTION_TREE) or {}, sci,
+                tree=True, display_scale=_display_scale(data, _SECTION_TREE),
+            )
+            self._fill_coef_table(
+                self.tables[_SECTION_SHRUB], data.get(_SECTION_SHRUB) or {}, sci,
+                tree=False, display_scale=_display_scale(data, _SECTION_SHRUB),
+            )
             self._fill_eq_table(self.tables[_SECTION_DOM], data.get(_SECTION_DOM) or {}, sci)
             self._fill_eq_table(self.tables[_SECTION_FOR], data.get(_SECTION_FOR) or {}, sci)
             for t in self.tables.values():
@@ -944,14 +972,19 @@ class SpeciesEditor(QGroupBox):
         self._set_dirty(False)
         self._sync_buttons()
 
-    def _fill_coef_table(self, t: QTableWidget, section: dict, sci: dict, tree: bool):
+    def _fill_coef_table(self, t: QTableWidget, section: dict, sci: dict, tree: bool,
+                         display_scale: float = 1.0):
         t.setRowCount(0)
         for name, entry in section.items():
             if isinstance(entry, dict) and "default" in entry:
                 arr = entry["default"]
             else:
                 arr = entry
-            self._append_coef_row(t, name, sci.get(_base_name(name), ""), arr, tree)
+            display_arr = list(arr)
+            if len(display_arr) >= 5 and display_scale != 1.0:
+                display_arr[3] = float(display_arr[3]) / display_scale
+                display_arr[4] = float(display_arr[4]) / display_scale
+            self._append_coef_row(t, name, sci.get(_base_name(name), ""), display_arr, tree)
 
     def _append_coef_row(self, t: QTableWidget, name: str, sci_name: str, arr: list,
                          tree: bool):
@@ -1005,7 +1038,7 @@ class SpeciesEditor(QGroupBox):
             if section == _SECTION_TREE:
                 self._append_coef_row(t, tr("새수종"), "", [0.1, 2.5, 0.5, 1, 30, 0.1, 0.1, 0.1], True)
             elif section == _SECTION_SHRUB:
-                self._append_coef_row(t, tr("새수종"), "", [0.0002, 2.5, 0.5, 5, 40, 0.2, 0.2, 0.2], False)
+                self._append_coef_row(t, tr("새수종"), "", [0.0002, 2.5, 0.5, 0.5, 4.0, 0.2, 0.2, 0.2], False)
             else:
                 self._append_eq_row(t, [tr("새수종") + "(전체)", "", "Y=0.1*X^2.5",
                                         "", "", "DBH (cm)", "", "", "", ""])
@@ -1058,6 +1091,16 @@ class SpeciesEditor(QGroupBox):
 
         if errors:
             return errors, None
+        schema = dict(out.get("_schema") or {})
+        schema["assessment_diameter_unit"] = "cm"
+        schema["TREE_BASE_equation_diameter_unit"] = _section_equation_unit(
+            self._data, _SECTION_TREE
+        )
+        schema["SHRUB_SPECIES_equation_diameter_unit"] = _section_equation_unit(
+            self._data, _SECTION_SHRUB
+        )
+        schema["growth_diameter_unit"] = "cm/year"
+        out["_schema"] = schema
         # 학명 표: 표에 있는 기본명만 남기고, 표에서 준 값으로 갱신
         old_sci = dict(self._data.get("SPECIES_EN") or {})
         live_bases = {_base_name(n) for sec in (_SECTION_TREE, _SECTION_SHRUB, _SECTION_DOM, _SECTION_FOR)
@@ -1077,6 +1120,9 @@ class SpeciesEditor(QGroupBox):
 
     def _collect_coef(self, t: QTableWidget, tree: bool, errors: list, sci_cb) -> dict:
         label = tr("교목") if tree else tr("관목")
+        section = _SECTION_TREE if tree else _SECTION_SHRUB
+        columns = _TREE_COLS if tree else _SHRUB_COLS
+        storage_scale = _display_scale(self._data, section)
         result: dict = {}
         for r in range(t.rowCount()):
             name = _get_true_name(t.item(r, 0)).strip()
@@ -1088,7 +1134,7 @@ class SpeciesEditor(QGroupBox):
             arr = []
             ok = True
             for c in range(8):
-                what = "%s '%s' / %s" % (label, name, tr(_TREE_COLS[c + 2][0]))
+                what = "%s '%s' / %s" % (label, name, tr(columns[c + 2][0]))
                 try:
                     arr.append(_num_out(_parse_num(t.item(r, c + 2).text() if t.item(r, c + 2) else "", what)))
                 except ValueError as e:
@@ -1103,6 +1149,9 @@ class SpeciesEditor(QGroupBox):
                 errors.append(tr("{label} '{name}': 계수 a, b 는 0 보다 커야 합니다").format(label=label, name=name))
                 continue
             sci_cb(name, t.item(r, 1).text() if t.item(r, 1) else "")
+            if storage_scale != 1.0:
+                arr[3] = _num_out(float(arr[3]) * storage_scale)
+                arr[4] = _num_out(float(arr[4]) * storage_scale)
             if tree:
                 result[name] = {"default": arr}
             else:

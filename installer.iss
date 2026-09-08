@@ -10,6 +10,8 @@
 ;    1) Inno Setup 6 설치:  https://jrsoftware.org/isdl.php
 ;    2) onedir 형태로 빌드:  python build_exe.py --onedir
 ;         → dist\FORECAST-SW\FORECAST-SW.exe 생성
+;    3) 라이브러리 관리자 빌드: python build_updater.py
+;         → dist\FORECAST-SW-Equation-Library-Manager.exe 생성
 ;
 ;  [설치본 만들기]
 ;    A) Inno Setup Compiler 에서 이 파일(installer.iss)을 열고 [Build > Compile]
@@ -25,6 +27,7 @@
 #define MyAppVersion "1.0"
 #define MyAppPublisher "세종수목원"
 #define MyAppExeName "FORECAST-SW.exe"
+#define MyLibraryManagerExeName "FORECAST-SW-Equation-Library-Manager.exe"
 ; --onedir 빌드 산출물 폴더 (installer.iss 기준 상대경로)
 #define MyDistDir "dist\FORECAST-SW"
 
@@ -36,7 +39,7 @@ AppVersion={#MyAppVersion}
 AppVerName={#MyAppName} {#MyAppVersion}
 AppPublisher={#MyAppPublisher}
 DefaultDirName={autopf}\FORECAST-SW
-DefaultGroupName=세종수목원
+DefaultGroupName=FORECAST-SW
 DisableProgramGroupPage=yes
 OutputDir=installer_output
 OutputBaseFilename=FORECAST-SW_Setup_{#MyAppVersion}
@@ -64,9 +67,11 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 [Files]
 ; onedir 산출물 폴더 전체를 설치 경로로 복사
 Source: "{#MyDistDir}\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion
+Source: "dist\{#MyLibraryManagerExeName}"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
+Name: "{group}\{#MyAppName} Equation Library Manager"; Filename: "{app}\{#MyLibraryManagerExeName}"
 Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 

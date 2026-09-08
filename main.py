@@ -8,6 +8,8 @@ Carbon1 (자생복원종) 과 Carbon2 (국내·국외 통합) 를 하나의 창�
 build_exe.py 가 이 파일을 빌드 대상으로 삼는다.
 
 표시 언어(한국어/English)는 최초 실행 시 선택하고 이후 저장값을 사용한다.
+신규 v1.0 설정의 기본 선택은 English 이며, 이전 CarbonStorageModule 설정은
+가져오지 않는다.
 `--lang ko|en` 로 지정하면 선택 창 없이 그 언어로 시작한다(메뉴에서 언어를 바꿀 때
 프로그램이 스스로 이 옵션을 붙여 재실행한다).
 """
@@ -33,7 +35,7 @@ def _parse_args(argv):
 
 
 def _resolve_language(args) -> str:
-    """--lang → 저장값 → 선택 창 순서로 표시 언어를 정한다."""
+    """--lang → FORECAST-SW 저장값 → 영문 기본 선택 순서로 언어를 정한다."""
     if args.lang:
         return args.lang
 
@@ -41,7 +43,7 @@ def _resolve_language(args) -> str:
     if saved:
         return saved
 
-    dialog = LanguageDialog(i18n.LANG_KO)
+    dialog = LanguageDialog(i18n.LANG_EN)
     dialog.exec_()
     chosen = dialog.chosen()
     i18n.save_language(chosen)

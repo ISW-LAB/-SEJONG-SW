@@ -20,7 +20,7 @@ class LanguageDialog(QDialog):
 
     def __init__(self, current: str = LANG_KO, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("언어 선택 / Language")
+        self.setWindowTitle("Language")
         self.setModal(True)
         self.setMinimumWidth(460)
 
@@ -28,13 +28,13 @@ class LanguageDialog(QDialog):
         layout.setContentsMargins(20, 18, 20, 16)
         layout.setSpacing(10)
 
-        title = QLabel("표시 언어를 선택하세요.\nSelect the display language.")
+        title = QLabel("Select the display language.")
         font = title.font(); font.setPointSize(font.pointSize() + 2); font.setBold(True)
         title.setFont(font)
         layout.addWidget(title)
 
-        self.ko_radio = QRadioButton("한국어  —  수종명을 국명으로 표기")
-        self.en_radio = QRadioButton("English  —  species labelled with scientific names")
+        self.ko_radio = QRadioButton("Korean — species labelled with Korean common names")
+        self.en_radio = QRadioButton("English — species labelled with scientific names")
         (self.en_radio if current == LANG_EN else self.ko_radio).setChecked(True)
         layout.addWidget(self.ko_radio)
         layout.addWidget(self.en_radio)
@@ -49,7 +49,7 @@ class LanguageDialog(QDialog):
         layout.addWidget(note)
 
         buttons = QDialogButtonBox(QDialogButtonBox.Ok)
-        buttons.button(QDialogButtonBox.Ok).setText("확인 / OK")
+        buttons.button(QDialogButtonBox.Ok).setText("OK")
         buttons.accepted.connect(self.accept)
         layout.addWidget(buttons)
 

@@ -26,6 +26,7 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
+from .calculations import calculate_site_carbon_metrics
 from .data import RESTORATION_ENVIRONMENTS
 from .i18n import (
     LANG_EN, LANG_KO, environment_name, get_language, save_language, tr,
@@ -40,6 +41,37 @@ from .version import __version__
 
 # 대상지 유형 선택지 — data.py 를 단일 출처로 사용하며 보고서 메타데이터로 보존한다.
 ENVIRONMENTS = RESTORATION_ENVIRONMENTS
+
+
+def build_region_comparison_record(region: dict) -> dict:
+    """Build one auditable multi-site comparison record.
+
+    Total stock is determined exclusively by the accepted inventory. Site area
+    is then used as the denominator for the area-normalized reporting metric,
+    in accordance with the controlled comparison presented in Figure 3 of the
+    accompanying manuscript.
+    """
+    inventory = region["window"].region_inventory_summary()
+    area = float(region["w"]) * float(region["h"])
+    metrics = calculate_site_carbon_metrics(
+        inventory["tree"], inventory["shrub"], area
+    )
+    return {
+        "name": region["name"],
+        "w": region["w"],
+        "h": region["h"],
+        "area": area,
+        "env": region["env"],
+        "tree": metrics.tree_carbon_kg,
+        "shrub": metrics.shrub_carbon_kg,
+        "total": metrics.total_carbon_kg,
+        "density": metrics.area_normalized_kg_m2,
+        "tree_quantity": inventory["tree_quantity"],
+        "shrub_quantity": inventory["shrub_quantity"],
+        "tree_planting_area": inventory["tree_planting_area"],
+        "shrub_planting_area": inventory["shrub_planting_area"],
+        "required_planting_area": inventory["required_planting_area"],
+    }
 
 
 # ------------------------------ 지역 추가 다이얼로그 ------------------------------
@@ -166,7 +198,7 @@ class RegionSelectDialog(QDialog):
 # ------------------------------ 지역 종합 분석 대시보드 ------------------------------
 
 class RegionComparisonDialog(QDialog):
-    """지역별 총 탄소저장량 비교 대시보드 (막대 차트 + 표)."""
+    """프로필별 식재 구성과 탄소저장량 비교 대시보드 (막대 차트 + 표)."""
 
     def __init__(self, data: List[dict], parent=None):
         super().__init__(parent)
@@ -178,7 +210,7 @@ class RegionComparisonDialog(QDialog):
         v = QVBoxLayout(self)
         v.setSpacing(8)
 
-        title = QLabel(tr("지역별 탄소저장량 비교"))
+        title = QLabel(tr("프로필별 식재 구성 및 탄소저장량 비교"))
         tf = title.font(); tf.setPointSize(pt(16)); tf.setBold(True)
         title.setFont(tf); title.setStyleSheet("color: #246B43;")
         v.addWidget(title)
@@ -187,29 +219,66 @@ class RegionComparisonDialog(QDialog):
         grand = sum(d["total"] for d in data)
         if data:
             top = max(data, key=lambda d: d["total"])
-            summary = (tr("총 {n}개 지역 · 전체 합계 {total:,.2f} kgC")
-                       .format(n=len(data), total=grand)
-                       + tr("   |   최대: {name} ({total:,.2f} kgC)")
-                       .format(name=top["name"], total=top["total"]))
+            common_areas = {float(d["area"]) for d in data}
+            if len(common_areas) == 1:
+                summary = (
+                    tr("{n}개 프로필 · 공통 대상지 면적 {area:,.0f} m²")
+                    .format(n=len(data), area=next(iter(common_areas)))
+                    + tr("   |   최대: {name} ({total:,.2f} kgC)")
+                    .format(name=top["name"], total=top["total"])
+                )
+            elif max(d["total"] for d in data) - min(d["total"] for d in data) <= 1e-9:
+                summary = tr(
+                    "{n}개 프로필 · 동일 총 탄소량 {total:,.2f} kgC · "
+                    "대상지 면적 {min_area:,.0f}–{max_area:,.0f} m²"
+                ).format(
+                    n=len(data),
+                    total=data[0]["total"],
+                    min_area=min(common_areas),
+                    max_area=max(common_areas),
+                )
+            else:
+                summary = (tr("총 {n}개 지역 · 전체 합계 {total:,.2f} kgC")
+                           .format(n=len(data), total=grand)
+                           + tr("   |   최대: {name} ({total:,.2f} kgC)")
+                           .format(name=top["name"], total=top["total"]))
         else:
             summary = tr("지역 데이터 없음")
         sub = QLabel(summary); sub.setStyleSheet("color: #555;")
         v.addWidget(sub)
 
-        # 막대 차트 (지역별 총 탄소저장량 비교 — 지역마다 색상+해치 구분)
-        canvas = MatplotlibCanvas(width=10, height=4.6)
-        canvas.plot_region_bars(
+        # 총 탄소저장량과 면적 정규화 탄소밀도를 나란히 제시한다.
+        chart_row = QHBoxLayout()
+        stock_canvas = MatplotlibCanvas(width=5.2, height=4.6)
+        stock_canvas.plot_region_bars(
             [d["name"] for d in data],
             [d["tree"] for d in data],
             [d["shrub"] for d in data],
-            show_title=False,
+            show_title=True,
         )
-        v.addWidget(canvas, 3)
+        density_canvas = MatplotlibCanvas(width=5.2, height=4.6)
+        density_canvas.plot_region_density_bars(
+            [d["name"] for d in data],
+            [d["density"] for d in data],
+            show_title=True,
+        )
+        chart_row.addWidget(stock_canvas, 1)
+        chart_row.addWidget(density_canvas, 1)
+        v.addLayout(chart_row, 3)
 
         # 비교 표
         table = QTableWidget()
-        headers = [tr("지역"), tr("면적(㎡)"), tr("교목(kgC)"), tr("관목(kgC)"),
-                   tr("총 탄소저장량(kgC)"), tr("단위면적당(kgC/㎡)")]
+        headers = [
+            tr("지역"),
+            tr("면적(㎡)"),
+            tr("교목\n개수 | 식재면적(㎡)"),
+            tr("관목\n개수 | 식재면적(㎡)"),
+            tr("필요면적 / 대상지면적(㎡)"),
+            tr("교목(kgC)"),
+            tr("관목(kgC)"),
+            tr("총 탄소저장량(kgC)"),
+            tr("면적 정규화\n탄소밀도(kgC/㎡)"),
+        ]
         table.setColumnCount(len(headers))
         table.setHorizontalHeaderLabels(headers)
         table.setRowCount(len(data))
@@ -217,10 +286,21 @@ class RegionComparisonDialog(QDialog):
         table.setEditTriggers(QTableWidget.NoEditTriggers)
         table.setAlternatingRowColors(True)
         table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        table.horizontalHeader().setMinimumHeight(px(58))
+        table.horizontalHeader().setDefaultAlignment(Qt.AlignCenter)
+        table.setWordWrap(True)
         for i, d in enumerate(data):
+            tree_quantity = int(d.get("tree_quantity", 0))
+            shrub_quantity = int(d.get("shrub_quantity", 0))
+            tree_area = float(d.get("tree_planting_area", tree_quantity))
+            shrub_area = float(d.get("shrub_planting_area", shrub_quantity * 0.25))
+            required_area = float(d.get("required_planting_area", tree_area + shrub_area))
             cells = [
                 d["name"],
                 f"{d['area']:,}",
+                f"{tree_quantity:,} | {tree_area:,.2f}",
+                f"{shrub_quantity:,} | {shrub_area:,.2f}",
+                f"{required_area:,.2f} / {d['area']:,.2f}",
                 f"{d['tree']:,.2f}",
                 f"{d['shrub']:,.2f}",
                 f"{d['total']:,.2f}",
@@ -230,7 +310,17 @@ class RegionComparisonDialog(QDialog):
                 item = QTableWidgetItem(text)
                 item.setTextAlignment(Qt.AlignVCenter | (Qt.AlignLeft if j == 0 else Qt.AlignCenter))
                 table.setItem(i, j, item)
+            table.setRowHeight(i, px(44))
         v.addWidget(table, 2)
+
+        note = QLabel(
+            tr("면적 정규화 탄소밀도는 총 탄소저장량을 대상지 면적으로 나눈 값입니다. "
+               "교목·관목 열은 유효 개체 수 | 설정된 식재면적을 나타냅니다. "
+               "식재면적은 입력 보호용 값이며 수종별 식재 권고가 아닙니다.")
+        )
+        note.setStyleSheet("color: #555; font-size: 9pt;")
+        note.setWordWrap(True)
+        v.addWidget(note)
 
         buttons = QDialogButtonBox(QDialogButtonBox.Close)
         buttons.button(QDialogButtonBox.Close).setText(tr("닫기"))
@@ -429,16 +519,7 @@ class CombinedMainWindow(QMainWindow):
             )
             return
 
-        data: List[dict] = []
-        for i in indices:
-            r = ordered[i]
-            tree, shrub, total = r["window"].region_total_carbon()
-            area = r["w"] * r["h"]
-            data.append({
-                "name": r["name"], "w": r["w"], "h": r["h"], "area": area,
-                "env": r["env"], "tree": tree, "shrub": shrub, "total": total,
-                "density": (total / area if area else 0.0),
-            })
+        data = [build_region_comparison_record(ordered[i]) for i in indices]
         RegionComparisonDialog(data, self).exec_()
 
     def _export_all_regions_excel(self) -> None:
@@ -470,13 +551,7 @@ class CombinedMainWindow(QMainWindow):
                 skipped.append(r["name"])
                 continue
             payloads.append(payload)
-            tree, shrub, total = r["window"].region_total_carbon()
-            area = r["w"] * r["h"]
-            comparison_data.append({
-                "name": r["name"], "w": r["w"], "h": r["h"], "area": area,
-                "env": r["env"], "tree": tree, "shrub": shrub, "total": total,
-                "density": (total / area if area else 0.0),
-            })
+            comparison_data.append(build_region_comparison_record(r))
 
         if not payloads:
             QMessageBox.information(

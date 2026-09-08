@@ -117,8 +117,8 @@ class MatplotlibCanvas(FigureCanvasQTAgg):
         self.draw_idle()
 
     def plot_multi_projection(self, series, title: str,
-                              ylabel: str = tr("탄소저장량 (kgC)"),
-                              xlabel: str = tr("경과 기간 (Years)"),
+                              ylabel: str | None = None,
+                              xlabel: str | None = None,
                               show_title: bool = True) -> None:
         """
         여러 추정 곡선을 한 그래프에 중첩 표시.
@@ -127,6 +127,10 @@ class MatplotlibCanvas(FigureCanvasQTAgg):
           - is_total=True 인 곡선은 굵은 점선(강조색)으로 그려 "총합"을 시각 구분.
         show_title=False 면 축 제목을 그리지 않는다(호출측이 패널 위 라벨로 제목을 표시할 때).
         """
+        # Resolve translated defaults at call time so the selected startup
+        # language is reflected even though this module was imported earlier.
+        ylabel = tr("탄소저장량 (kgC)") if ylabel is None else ylabel
+        xlabel = tr("경과 기간 (Years)") if xlabel is None else xlabel
         self._teardown_hover()
         self.ax.clear()
         if not series:
@@ -282,7 +286,7 @@ class MatplotlibCanvas(FigureCanvasQTAgg):
         ann.set_va(va)
 
     def plot_pie(self, labels: list[str], values: list[float],
-                 title: str = tr("수종별 탄소저장량 기여도"), top_n: int = 5,
+                 title: str | None = None, top_n: int = 5,
                  label_fs: float = 17, title_fs: float = 20,
                  show_title: bool = True) -> None:
         """
@@ -294,6 +298,7 @@ class MatplotlibCanvas(FigureCanvasQTAgg):
         label_fs / title_fs: 작은 1/3 패널(Carbon1 기여도)에서 더 작은 글꼴을 쓰기 위한 인자.
         show_title=False 면 차트 제목을 그리지 않는다(호출측이 패널 위 라벨로 제목을 표시할 때).
         """
+        title = tr("수종별 탄소저장량 기여도") if title is None else title
         self._teardown_hover()
         self.ax.clear()
 
@@ -332,14 +337,16 @@ class MatplotlibCanvas(FigureCanvasQTAgg):
 
     def plot_region_bars(self, names: list[str], tree_vals: list[float],
                          shrub_vals: list[float],
-                         ylabel: str = tr("탄소저장량 (kgC)"), show_title: bool = True,
-                         title: str = tr("지역별 탄소저장량 비교")) -> None:
+                         ylabel: str | None = None, show_title: bool = True,
+                         title: str | None = None) -> None:
         """지역별 **총** 탄소저장량 비교 막대 차트.
 
         각 지역(=막대)을 **고유 색상 + 해치 패턴**(/, ., x …)으로 자동 구분하고, 범례를
         **축 바깥 오른쪽**에 두되 **지역명**을 표시한다(교목/관목은 범례로 표시하지 않음).
         교목/관목 세부 내역은 동일 다이얼로그의 표에서 확인.
         """
+        ylabel = tr("탄소저장량 (kgC)") if ylabel is None else ylabel
+        title = tr("지역별 탄소저장량 비교") if title is None else title
         self._teardown_hover()
         self.ax.clear()
         if not names:
@@ -378,6 +385,67 @@ class MatplotlibCanvas(FigureCanvasQTAgg):
         self.ax.legend(
             title=tr("지역"), loc="upper left", bbox_to_anchor=(1.01, 1.0),
             fontsize=_fs(10), framealpha=0.95, borderaxespad=0.0, ncol=max(1, ncol),
+        )
+        self.ax.grid(True, axis="y", alpha=0.3)
+        self.draw_idle()
+
+    def plot_region_density_bars(
+        self,
+        names: list[str],
+        density_vals: list[float],
+        *,
+        show_title: bool = True,
+    ) -> None:
+        """Plot area-normalized carbon density for each comparison site."""
+        self._teardown_hover()
+        self.ax.clear()
+        if not names:
+            self.show_message(tr("비교할 지역이 없습니다."))
+            return
+        if len(names) != len(density_vals):
+            raise ValueError("names and density_vals must have the same length")
+
+        x = list(range(len(names)))
+        cmap = plt.get_cmap("tab10")
+        hatches = ["//", "\\\\", "..", "xx", "++", "oo", "--", "**", "||"]
+        for i, (xi, density, name) in enumerate(zip(x, density_vals, names)):
+            self.ax.bar(
+                xi,
+                density,
+                width=0.7,
+                color=cmap(i % 10),
+                hatch=hatches[i % len(hatches)],
+                edgecolor="white",
+                linewidth=0.8,
+                label=name,
+            )
+
+        top = max(density_vals) if density_vals else 0.0
+        for xi, density in zip(x, density_vals):
+            self.ax.text(
+                xi,
+                density + (top * 0.01 if top else 0.0),
+                f"{density:,.4f}",
+                ha="center",
+                va="bottom",
+                fontsize=_fs(10),
+                fontweight="bold",
+            )
+
+        self.ax.set_xticks([])
+        self.ax.set_ylabel(tr("면적 정규화 탄소밀도 (kgC/㎡)"))
+        self.ax.set_ylim(0, top * 1.18 if top > 0 else 1.0)
+        if show_title:
+            self.ax.set_title(tr("지역별 면적 정규화 탄소밀도"), fontweight="bold")
+        ncol = 1 + (len(names) - 1) // 12
+        self.ax.legend(
+            title=tr("지역"),
+            loc="upper left",
+            bbox_to_anchor=(1.01, 1.0),
+            fontsize=_fs(10),
+            framealpha=0.95,
+            borderaxespad=0.0,
+            ncol=max(1, ncol),
         )
         self.ax.grid(True, axis="y", alpha=0.3)
         self.draw_idle()
