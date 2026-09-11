@@ -2,7 +2,7 @@
 
 **Carbon-stock assessment and growth scenario analysis for forest restoration plantings**
 
-**English** · [한국어](README.md)
+**English** · [한국어](README.ko.md)
 
 Official v1.0 release evaluated in the SoftwareX article of the same title. Figures and tables below are those reported in the article.
 
@@ -17,7 +17,7 @@ Official v1.0 release evaluated in the SoftwareX article of the same title. Figu
 | C5 | Code versioning system used | Git |
 | C6 | Languages, tools, and services used | Python, PyQt5, NumPy, Matplotlib, openpyxl, Pillow, PyVista/VTK, PyInstaller, Inno Setup |
 | C7 | Compilation requirements, OS & dependencies | Windows 10/11; Python ≥ 3.10; see [`requirements.txt`](requirements.txt) |
-| C8 | Developer documentation/manual | English: [README.en.md](README.en.md); Korean: [README.md](README.md) |
+| C8 | Developer documentation/manual | English: [README.en.md](README.en.md); Korean: [README.ko.md](README.ko.md) |
 | C9 | Support email | [kc.jeong-isw@cbnu.ac.kr](mailto:kc.jeong-isw@cbnu.ac.kr); [gc.jo-isw@cbnu.ac.kr](mailto:gc.jo-isw@cbnu.ac.kr) |
 
 [1. Architecture](#1-architecture-and-workflow) · [2. Equation library](#2-equation-library) · [3. Calculation](#3-calculation) · [4. Illustrative examples](#4-illustrative-examples) · [5. Install](#5-install-and-run) · [6. Edit & deploy](#6-edit-and-deploy-the-equation-library) · [7. Build](#7-build) · [8. Tests](#8-tests) · [9. Layout](#9-repository-layout) · [10. Citation](#10-citation) · [11. License](#11-license)

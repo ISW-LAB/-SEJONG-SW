@@ -13,7 +13,7 @@ Test suite re-verified: 2026-09-11 (Asia/Seoul)
 
 ## Checks performed
 
-1. `python -m unittest discover -s tests -v`: 22 tests passed, including the
+1. `python -m unittest discover -s tests -v`: 23 tests passed, including the
    shared-centimeter DBH/RCD contract, legacy shrub-equation equivalence,
    combined planting-area boundary and over-limit cases, area-normalized
    carbon density, and normalized-density values exported to XLSX.

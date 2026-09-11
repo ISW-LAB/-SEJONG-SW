@@ -126,6 +126,28 @@ class LibraryTests(unittest.TestCase):
             "update the document after adding or removing tests",
         )
 
+    def test_english_readme_is_served_from_both_paths(self) -> None:
+        """README.md and README.en.md must hold the same English document.
+
+        README.md is the repository landing page and README.en.md is the path
+        cited as the English manual in the article metadata (C8), so the two
+        are kept byte-identical apart from line endings. README.ko.md carries
+        the Korean translation and is linked from both.
+        """
+        landing = (REPOSITORY_ROOT / "README.md").read_text(encoding="utf-8")
+        english = (REPOSITORY_ROOT / "README.en.md").read_text(encoding="utf-8")
+        korean = (REPOSITORY_ROOT / "README.ko.md").read_text(encoding="utf-8")
+
+        self.assertEqual(
+            landing.replace("\r\n", "\n"),
+            english.replace("\r\n", "\n"),
+            "README.md and README.en.md have diverged; update both together",
+        )
+        for name, text in (("README.md", landing), ("README.ko.md", korean)):
+            with self.subTest(document=name):
+                self.assertIn("](README.ko.md)", text)
+        self.assertIn("[English](README.md)", korean)
+
     def test_release_library_counts(self) -> None:
         self.assertEqual(len(TREE_SPECIES), 7)
         self.assertEqual(len(SHRUB_SPECIES), 15)
