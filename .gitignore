@@ -17,3 +17,7 @@ installer_output/
 .idea/
 Thumbs.db
 .DS_Store
+
+# Local developer launchers (machine-specific conda/venv paths, not part of the release)
+*_rudckd.bat
+run_local.bat
