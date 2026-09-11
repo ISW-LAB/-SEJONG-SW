@@ -24,9 +24,10 @@ from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (
     QApplication, QCheckBox, QComboBox, QDialog, QDialogButtonBox, QDoubleSpinBox,
-    QFileDialog, QFormLayout, QFrame, QGroupBox, QHBoxLayout, QHeaderView, QLabel,
-    QMainWindow, QMessageBox, QPushButton, QScrollArea, QSizePolicy, QSpinBox,
-    QSplitter, QTabWidget, QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget,
+    QFileDialog, QFormLayout, QFrame, QGridLayout, QGroupBox, QHBoxLayout,
+    QHeaderView, QLabel, QMainWindow, QMessageBox, QPushButton, QScrollArea,
+    QSizePolicy, QSpinBox, QSplitter, QTabWidget, QTableWidget, QTableWidgetItem,
+    QVBoxLayout, QWidget,
 )
 
 from .calculations import (
@@ -47,7 +48,7 @@ from .plotting import MatplotlibCanvas
 from .ui_scale import apply_dialog_size, pt, px
 from .widgets import (
     LinearGauge, NoWheelComboBox, NoWheelDoubleSpinBox, NoWheelSpinBox, ResultTable,
-    SearchableComboBox,
+    SearchableComboBox, align_gauge_row,
 )
 from .tree_simulation.models import VisualizationInputGroup
 from .tree_simulation.snapshot import build_snapshot, input_fingerprint
@@ -716,9 +717,20 @@ class MainWindow(QMainWindow):
         self.shrub_value_label = self._make_value_field("0.00")
         self.total_value_label = self._make_value_field("0.00")
 
-        v.addLayout(self._gauge_row(tr("교목 탄소저장량 (kgC)"), self.tree_gauge, self.tree_value_label))
-        v.addLayout(self._gauge_row(tr("관목 탄소저장량 (kgC)"), self.shrub_gauge, self.shrub_value_label))
-        v.addLayout(self._gauge_row(tr("총 탄소저장량 (kgC)"),  self.total_gauge, self.total_value_label))
+        # 세 행을 하나의 격자에 담아 [제목 | 바 | 값] 열 위치를 행끼리 일치시킨다.
+        # (행마다 별도 QHBoxLayout 을 쓰면 제목 길이에 따라 바 시작 x 가 어긋난다.)
+        gauges = QGridLayout()
+        gauges.setContentsMargins(0, 0, 0, 0)
+        gauges.setHorizontalSpacing(px(10))
+        gauges.setVerticalSpacing(px(10))
+        gauges.setColumnStretch(1, 1)
+        self._add_gauge_row(gauges, 0, tr("교목 탄소저장량 (kgC)"),
+                            self.tree_gauge, self.tree_value_label)
+        self._add_gauge_row(gauges, 1, tr("관목 탄소저장량 (kgC)"),
+                            self.shrub_gauge, self.shrub_value_label)
+        self._add_gauge_row(gauges, 2, tr("총 탄소저장량 (kgC)"),
+                            self.total_gauge, self.total_value_label)
+        v.addLayout(gauges)
 
         # 그래프 영역: [교목 추정 / 교목 기여도 / 관목 추정 / 관목 기여도] sub tab.
         # 2-row 동시 배치는 그래프가 작아 보이므로, 각 그래프가 전체 영역을 차지하도록 탭 분리.
@@ -826,16 +838,22 @@ class MainWindow(QMainWindow):
         lbl.setFont(font)
         return lbl
 
-    def _gauge_row(self, title: str, gauge: LinearGauge, value_label: QLabel) -> QHBoxLayout:
-        row = QHBoxLayout()
+    def _add_gauge_row(self, grid: QGridLayout, row: int, title: str,
+                       gauge: LinearGauge, value_label: QLabel) -> None:
+        """격자 한 행에 [제목 | 게이지 | 값] 을 배치하고 세로 중심선을 맞춘다.
+
+        제목·값 라벨과 게이지 바를 같은 높이의 상단 밴드에 넣고 세 위젯을 모두
+        상단 정렬한다 → 제목 글자·바·값 상자가 같은 선에 놓이고, 눈금값은 바
+        아래에 걸린다. 제목은 오른쪽 정렬이라 바로 옆 바와 바로 이어져 읽힌다.
+        """
         title_label = QLabel(title)
         title_label.setMinimumWidth(px(150))
-        title_label.setAlignment(Qt.AlignCenter)
+        title_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         title_label.setStyleSheet("font-weight: bold;")
-        row.addWidget(title_label)
-        row.addWidget(gauge, 1)
-        row.addWidget(value_label)
-        return row
+        align_gauge_row(title_label, gauge, value_label)
+        grid.addWidget(title_label, row, 0, Qt.AlignTop)
+        grid.addWidget(gauge, row, 1, Qt.AlignTop)
+        grid.addWidget(value_label, row, 2, Qt.AlignTop)
 
     def _make_result_table(self) -> QTableWidget:
         # 수종(0열)이 flex — 남는 폭을 흡수해 패널 폭에 정확히 맞춤

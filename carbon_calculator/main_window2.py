@@ -37,7 +37,7 @@ from .plotting import MatplotlibCanvas
 from .ui_scale import apply_dialog_size, pt, px
 from .widgets import (
     LinearGauge, NoWheelComboBox, NoWheelDoubleSpinBox, NoWheelSpinBox,
-    ResultTable, SearchableComboBox,
+    ResultTable, SearchableComboBox, align_gauge_row,
 )
 
 
@@ -521,14 +521,17 @@ class Carbon2MainWindow(QMainWindow):
         big = QFont(); big.setPointSize(pt(17)); big.setBold(True)
         self.total_value_label.setFont(big)
 
+        # 제목·바·값을 같은 높이의 상단 밴드에 넣고 상단 정렬 → 세로 중심선 일치.
         gauge_row = QHBoxLayout()
+        gauge_row.setSpacing(px(10))
         title = QLabel(tr("총 탄소저장량 (kgC)"))
         title.setMinimumWidth(px(160))
-        title.setAlignment(Qt.AlignCenter)
+        title.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         title.setStyleSheet("font-weight: bold;")
-        gauge_row.addWidget(title)
-        gauge_row.addWidget(self.total_gauge, 1)
-        gauge_row.addWidget(self.total_value_label)
+        align_gauge_row(title, self.total_gauge, self.total_value_label)
+        gauge_row.addWidget(title, 0, Qt.AlignTop)
+        gauge_row.addWidget(self.total_gauge, 1, Qt.AlignTop)
+        gauge_row.addWidget(self.total_value_label, 0, Qt.AlignTop)
         v.addLayout(gauge_row)
 
         # 파이 차트

@@ -8,9 +8,9 @@ from __future__ import annotations
 import difflib
 
 from PyQt5.QtCore import Qt, QRectF, pyqtSignal
-from PyQt5.QtGui import QPainter, QColor, QPen, QFont
+from PyQt5.QtGui import QPainter, QColor, QFontMetrics, QPen, QFont
 from PyQt5.QtWidgets import (
-    QComboBox, QDoubleSpinBox, QHeaderView, QLineEdit, QListWidget,
+    QComboBox, QDoubleSpinBox, QHeaderView, QLabel, QLineEdit, QListWidget,
     QListWidgetItem, QSpinBox, QTableWidget, QVBoxLayout, QWidget,
 )
 
@@ -245,7 +245,22 @@ class ResultTable(QTableWidget):
 
 
 class LinearGauge(QWidget):
-    """수평 선형 게이지 (눈금 + 채워지는 바)."""
+    """수평 선형 게이지 (눈금 + 채워지는 바).
+
+    세로 구성은 위에서부터 [바 밴드] → [눈금] → [눈금값] 이다. 바는 **밴드(band)
+    안에서 세로 중앙**에 그려지므로, 같은 행의 제목·값 라벨을 같은 밴드 높이로
+    맞춰 상단 정렬하면 (제목 · 바 · 값) 세 요소의 중심선이 정확히 일치한다.
+    행 구성은 :func:`align_gauge_row` 가 담당한다.
+
+    양 끝 눈금값(예: 0, 2000)이 위젯 밖으로 잘리지 않도록 트랙 좌우에 눈금값
+    절반 폭만큼 여백을 둔다.
+    """
+
+    _TRACK_H = 16      # 바 두께 (기준 해상도 px)
+    _TICK_LEN = 5      # 눈금 길이
+    _TICK_GAP = 3      # 눈금 끝 ↔ 눈금값 사이 여백
+    _TICK_PT = 11      # 눈금값 글자 크기(pt)
+    _RADIUS = 4        # 바 모서리 둥글기
 
     def __init__(self, minimum: float = 0.0, maximum: float = 100.0,
                  major_ticks: list[float] | None = None, parent=None):
@@ -254,7 +269,8 @@ class LinearGauge(QWidget):
         self._max = float(maximum)
         self._value = 0.0
         self._major_ticks = list(major_ticks) if major_ticks else self._default_ticks()
-        self.setMinimumHeight(px(52))
+        self._band_h = px(34)
+        self._apply_geometry()
 
     def _default_ticks(self) -> list[float]:
         span = self._max - self._min
@@ -262,6 +278,34 @@ class LinearGauge(QWidget):
             return [self._min, self._max]
         step = span / 5
         return [self._min + step * i for i in range(6)]
+
+    # ----- 세로 배치 -----
+
+    def _tick_font(self) -> QFont:
+        font = QFont()
+        font.setPointSize(pt(self._TICK_PT))
+        return font
+
+    def band_height(self) -> int:
+        """바가 세로 중앙에 놓이는 상단 밴드의 높이."""
+        return self._band_h
+
+    def set_band_height(self, height: int) -> None:
+        """상단 밴드 높이를 지정 (같은 행 제목·값 라벨 높이와 통일하기 위함)."""
+        height = max(px(self._TRACK_H) + px(4), int(height))
+        if height == self._band_h:
+            return
+        self._band_h = height
+        self._apply_geometry()
+
+    def _apply_geometry(self) -> None:
+        """밴드 + 눈금 + 눈금값 이 정확히 들어가는 높이로 고정."""
+        label_h = QFontMetrics(self._tick_font()).height()
+        self.setFixedHeight(self._band_h + px(self._TICK_LEN) + px(self._TICK_GAP) + label_h)
+        self.updateGeometry()
+        self.update()
+
+    # ----- 값 -----
 
     def setValue(self, v: float) -> None:
         self._value = max(self._min, min(self._max, float(v)))
@@ -281,18 +325,28 @@ class LinearGauge(QWidget):
     def paintEvent(self, _event) -> None:
         p = QPainter(self)
         p.setRenderHint(QPainter.Antialiasing)
+        p.setFont(self._tick_font())
+        metrics = p.fontMetrics()
 
         w = self.width()
-        h = self.height()
+        labels = [f"{tick:g}" for tick in self._major_ticks]
 
-        track_top = 6
-        track_h = max(10, h // 3)
-        track_rect = QRectF(2, track_top, w - 4, track_h)
+        # 좌우 여백 = 양 끝 눈금값의 절반 폭 (끝 숫자가 잘리지 않도록)
+        pad = px(2)
+        if labels:
+            pad = max(pad,
+                      metrics.horizontalAdvance(labels[0]) // 2,
+                      metrics.horizontalAdvance(labels[-1]) // 2)
+
+        track_h = px(self._TRACK_H)
+        track_top = max(0, (self._band_h - track_h) // 2)
+        track_rect = QRectF(pad, track_top, max(1, w - 2 * pad), track_h)
+        radius = min(px(self._RADIUS), track_h / 2)
 
         # Track
         p.setPen(QPen(QColor(150, 150, 150), 1))
         p.setBrush(QColor(235, 235, 235))
-        p.drawRoundedRect(track_rect, 4, 4)
+        p.drawRoundedRect(track_rect, radius, radius)
 
         # Fill bar
         span = max(self._max - self._min, 1e-9)
@@ -309,18 +363,34 @@ class LinearGauge(QWidget):
             color = QColor(0xC0, 0x39, 0x2B)
         p.setPen(Qt.NoPen)
         p.setBrush(color)
-        p.drawRoundedRect(fill_rect, 4, 4)
+        if fill_rect.width() > 0:
+            p.drawRoundedRect(fill_rect, radius, radius)
 
         # Ticks + labels
         p.setPen(QPen(QColor(80, 80, 80), 1))
-        font = QFont()
-        font.setPointSize(pt(11))
-        p.setFont(font)
-        for tick in self._major_ticks:
+        tick_bottom = int(track_rect.bottom()) + px(self._TICK_LEN)
+        baseline = tick_bottom + px(self._TICK_GAP) + metrics.ascent()
+        for tick, label in zip(self._major_ticks, labels):
             t_ratio = (tick - self._min) / span
             x = track_rect.x() + track_rect.width() * t_ratio
-            p.drawLine(int(x), int(track_rect.bottom()), int(x), int(track_rect.bottom()) + 4)
-            label = f"{tick:g}"
-            metrics = p.fontMetrics()
+            p.drawLine(int(x), int(track_rect.bottom()), int(x), tick_bottom)
             tw = metrics.horizontalAdvance(label)
-            p.drawText(int(x - tw / 2), int(track_rect.bottom()) + 20, label)
+            tx = min(max(0.0, x - tw / 2), max(0.0, w - tw))
+            p.drawText(int(tx), baseline, label)
+
+
+def align_gauge_row(title_label: QLabel, gauge: LinearGauge,
+                    value_label: QLabel) -> int:
+    """(제목 · 게이지 바 · 값) 세 위젯의 세로 중심선을 한 줄로 맞춘다.
+
+    세 위젯 중 가장 높은 것을 기준으로 행 상단 밴드 높이를 정하고, 제목·값 라벨을
+    그 높이로 고정한 뒤 게이지도 같은 밴드 안에 바를 세로 중앙 배치하게 한다.
+    호출측은 세 위젯을 ``Qt.AlignTop`` 으로 배치하면 된다. 밴드 높이를 반환한다.
+    """
+    band = max(px(34),
+               title_label.sizeHint().height(),
+               value_label.sizeHint().height())
+    title_label.setFixedHeight(band)
+    value_label.setFixedHeight(band)
+    gauge.set_band_height(band)
+    return band
