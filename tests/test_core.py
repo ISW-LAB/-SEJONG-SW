@@ -103,6 +103,29 @@ class LibraryTests(unittest.TestCase):
         self.assertIn(f'#define MyAppVersion "{__version__}"', installer)
         self.assertIn(f"# FORECAST-SW v{__version__}", release_notes)
 
+    def test_build_verification_records_the_current_suite_size(self) -> None:
+        """BUILD_VERIFICATION.md must state the number of tests this suite actually has.
+
+        The recorded count drifted once before (18 documented against a larger
+        suite), so the document is checked against live discovery rather than a
+        hard-coded number.
+        """
+        suite = unittest.defaultTestLoader.discover(
+            start_dir=str(REPOSITORY_ROOT / "tests"),
+            top_level_dir=str(REPOSITORY_ROOT),
+        )
+        total = suite.countTestCases()
+        verification = (REPOSITORY_ROOT / "BUILD_VERIFICATION.md").read_text(encoding="utf-8")
+        documented = re.search(r"(\d+) tests passed", verification)
+        self.assertIsNotNone(documented, "BUILD_VERIFICATION.md must record '<n> tests passed'")
+        self.assertEqual(
+            int(documented.group(1)),
+            total,
+            "BUILD_VERIFICATION.md records "
+            f"{documented.group(1)} tests but the suite now has {total}; "
+            "update the document after adding or removing tests",
+        )
+
     def test_release_library_counts(self) -> None:
         self.assertEqual(len(TREE_SPECIES), 7)
         self.assertEqual(len(SHRUB_SPECIES), 15)

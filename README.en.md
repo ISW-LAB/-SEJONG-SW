@@ -1,256 +1,328 @@
-# FORECAST-SW - Forest Carbon Estimation and Scenario Analysis Software for Restoration Sites
+# FORECAST-SW
 
-A PyQt5 port of the original MATLAB App Designer application
-(`Carbon_251002_5.mlapp` / `Carbon2_251013_1.mlapp`). The project builds two
-executables: the **FORECAST-SW Assessment Application** (`FORECAST-SW.exe`) and
-the **FORECAST-SW Equation Library Manager**
-(`FORECAST-SW-Equation-Library-Manager.exe`). The manager edits, validates,
-backs up, and deploys allometric equation records used by the assessment
-application.
+**Carbon-stock assessment and growth scenario analysis for forest restoration plantings**
 
-The version 1.0 scientific library separates its user-facing and compatibility
-coverage. The primary site-assessment workflow exposes **22 native records**
-(seven tree and 15 shrub records). A further **55 compatibility records**
-(30 domestic and 25 international records) are maintained in the Equation
-Library Manager and equation evaluator but are not selectable in the primary
-workflow. Together,
-the 77 named records implement 79 executable equations. This distinction is
-important when interpreting the software's current operational coverage.
+**English** · [한국어](README.md)
 
-The site category stored with each project is descriptive metadata. It does
-not select or modify the allometric coefficients in this release; every site
-uses the species-level default record from the validated library.
+Official v1.0 release evaluated in the SoftwareX article of the same title. Figures and tables below are those reported in the article.
 
-All user-facing diameter inputs and outputs use centimetres: tree diameter at
-breast height (DBH) and shrub root-collar diameter (RCD) are reported in cm in
-the interface, tables, plots, visualizations, and XLSX files. The 15 legacy
-shrub equations retain their original millimetre-based fitted coefficients for
-scientific traceability. The analytical adapter converts RCD from cm to the
-equation-native predictor only at evaluation, so existing carbon estimates are
-unchanged.
+#### Table 1. Code metadata
 
-Before calculation, the assessment application validates the mixed inventory
-against the configured site area. Version 1.0 assigns input-guard footprints
-of 1.00 m² per tree and 0.25 m² per shrub and blocks the calculation when their
-combined requirement exceeds the site area. These configurable values prevent
-accidental over-entry; they are not species-specific planting recommendations.
+| Nr | Description | Value |
+|:---:|---|---|
+| C1 | Current code version | FORECAST-SW v1.0 |
+| C2 | Permanent link to code repository | https://github.com/ISW-LAB/-SEJONG-SW/tree/v1.0 |
+| C3 | Permanent link to Reproducible Capsule | Not applicable |
+| C4 | Legal Code License | [MIT](LICENSE); [KOGL Type 1](DATA_LICENSE.md) for `species_data.json` |
+| C5 | Code versioning system used | Git |
+| C6 | Languages, tools, and services used | Python, PyQt5, NumPy, Matplotlib, openpyxl, Pillow, PyVista/VTK, PyInstaller, Inno Setup |
+| C7 | Compilation requirements, OS & dependencies | Windows 10/11; Python ≥ 3.10; see [`requirements.txt`](requirements.txt) |
+| C8 | Developer documentation/manual | English: [README.en.md](README.en.md); Korean: [README.md](README.md) |
+| C9 | Support email | [kc.jeong-isw@cbnu.ac.kr](mailto:kc.jeong-isw@cbnu.ac.kr); [gc.jo-isw@cbnu.ac.kr](mailto:gc.jo-isw@cbnu.ac.kr) |
 
-The multi-site comparison reports both total carbon stock and area-normalized
-carbon density. For each site, the shared analytical service calculates
-`total carbon (kg C) / site area (m²)` and reports the result in `kg C/m²`.
-Changing site area alone therefore changes the normalization denominator but
-does not rescale the submitted inventory or its total carbon stock. The
-dashboard and combined XLSX report present total stock and normalized density
-as paired charts and retain the underlying numerical values in the comparison
-table.
+[1. Architecture](#1-architecture-and-workflow) · [2. Equation library](#2-equation-library) · [3. Calculation](#3-calculation) · [4. Illustrative examples](#4-illustrative-examples) · [5. Install](#5-install-and-run) · [6. Edit & deploy](#6-edit-and-deploy-the-equation-library) · [7. Build](#7-build) · [8. Tests](#8-tests) · [9. Layout](#9-repository-layout) · [10. Citation](#10-citation) · [11. License](#11-license)
 
-The interface, figures and Excel output are available in **Korean and English**.
-In English mode every species is labelled with its scientific name
-(e.g. *Pinus densiflora*), so tables and figures can be used directly in a
-manuscript.
-
-## Repository layout
-
-```
-├── main.py                  ← entry point (Carbon1 · Carbon2 in one tabbed window)
-├── build_exe.py             ← builds the core software (main.py → module executable)
-├── build_updater.py         ← builds the Equation Library Manager
-├── updater_app.py           ← manager application (runs build_exe.py logic internally)
-├── build_library_manager.bat ← Windows batch wrapper for build_updater.py
-├── 실행_rudckd.bat          ← Windows batch launcher (conda env, dependency check, run)
-├── installer.iss            ← Inno Setup script for a Windows installer
-├── requirements.txt         ← runtime dependencies
-├── species_data.json        ← combined species dataset (trees, shrubs, domestic, international)
-├── icon.ico                 ← application icon
-└── carbon_calculator/       ← core package
-    ├── data.py / data2.py          — species coefficients and allometric equations
-    ├── calculations.py             — carbon storage calculation
-    ├── input_limits.py             — combined tree/shrub planting-area safeguard
-    ├── equation_eval.py            — evaluation of equations given as strings
-    ├── widgets.py / plotting.py    — shared widgets / figures
-    ├── theme.py / font_config.py / ui_scale.py  — theme, fonts, DPI scaling
-    ├── excel_export.py             — Excel export
-    ├── i18n.py / translations.py / species_names_en.py  — Korean/English display layer
-    ├── language_dialog.py          — language selection at first start
-    ├── main_window.py              — Carbon1 (native restoration species)
-    ├── main_window2.py             — Carbon2 (domestic and international species)
-    ├── combined_window.py          — integrated main window with one tab per site
-    └── tree_simulation/            — 3D vegetation growth visualization (PyVista/VTK)
-```
+> [!IMPORTANT]
+> **Scope.** Allometric equations define diameter–biomass relationships; diameter development is prescribed separately through annual increments. Trajectories are therefore **deterministic outcomes under the specified growth assumptions** — not validated predictions. Estimates beyond the fitted diameter range are **extrapolations**. Planting-area footprints and 3D geometry are software-defined settings, not ecological carrying capacity or measured plant architecture.
 
 ---
 
-## 0. Prerequisites (once)
+## 1. Architecture and workflow
+
+Python + PyQt5 for Windows. NumPy (computation), Matplotlib (2D plots), openpyxl (XLSX), PyVista/VTK (optional 3D). Korean and English interfaces use the same computational services; the packaged application runs without a separate Python installation.
+
+<p align="center">
+  <img src="figures/paper/fig1_workflow.png" alt="Software architecture and eight-stage workflow of FORECAST-SW" width="100%">
+</p>
+
+> **Figure 1.** Software architecture and eight-stage workflow of FORECAST-SW, from equation-library management to carbon-stock assessment, scenario analysis, and reporting.
+
+| Stage | Component | Core content |
+|:---:|---|---|
+| **1** | Library Manager | Define equations and parameters across four collections — coefficients, carbon fraction, fitted range, three period-specific increments (years 1–10 / 11–20 / 21–50) |
+| **2** | Library Manager | Validate identifiers, duplicates, coefficients, range ordering, and expressions → save as JSON |
+| **3** | Library Manager | Application loads the validated user library at startup; default release library kept as fallback |
+| **4** | Assessment App | Enter site info and species / diameter / represented count. DBH and RCD entered in cm, converted to equation-native units; record-specific overrides available |
+| **5** | Assessment App | Entry- and calculation-level validation + planting-area safeguard |
+| **6** | Assessment App | Shared engine evaluates each accepted record → aggregate by species and site → carbon density |
+| **7** | Assessment App | 0–50-year scenarios projected from the stored increments, evaluated by the **same engine** as current stock |
+| **8** | Assessment App | 2D plots, optional 3D views, cross-site comparison, XLSX export |
+
+---
+
+## 2. Equation library
+
+**77 equation records covering 67 distinct scientific names.** Multiple records are retained for a species when source studies differ in geographic origin, stand condition, or biomass component — *Pinus thunbergii*, for example, has **four records**.
+
+| Collection | Records | Predictor | Stored form | Assessment | Scenarios |
+|---|---:|---|---|:---:|:---:|
+| Trees `TREE_BASE` | **7** | DBH (cm) | Coefficients `a, b, CF` + range + increments | ✅ | ✅ |
+| Shrubs `SHRUB_SPECIES` | **15** | RCD (fitted in mm) | Coefficients `a, b, CF` + range + increments | ✅ | ✅ |
+| Domestic `DOMESTIC_SPECIES` | **30** | DBH (+ height, density, LAI) | Expression string + range | — | — |
+| International `FOREIGN_SPECIES` | **25** | DBH (+ height, density, LAI) | Expression string + range | — | — |
+| **Total** | **77** | | | **22** | **22** |
+
+#### Table 2. Representative allometric equation records from the FORECAST-SW tree and shrub collections, including predictor definitions, fitted diameter ranges, and period-specific growth increments
+
+| Scientific name | Allometric equation | Predictor | Fitted range | 1–10 | 11–20 | 21–50 |
+|---|---|:---:|:---:|---:|---:|---:|
+| ***Tree collection*** | | | | | | |
+| *Pinus densiflora* | `Y = 0.0737·X^2.5735` | DBH | 1–15 cm | 0.11 | 0.20 | 0.70 |
+| *Pinus thunbergii* | `Y = 0.0679·X^2.5770` | DBH | 1–29 cm | 0.24 | 0.32 | 0.32 |
+| *Chamaecyparis obtusa* | `Y = 0.3617·X^2.0450` | DBH | 1–50 cm | 0.11 | 0.23 | 0.23 |
+| *Quercus serrata* | `Y = 0.2002·X^2.3767` | DBH | 1–30 cm | 0.13 | 0.30 | 0.30 |
+| *Quercus mongolica* | `Y = 0.0147·X^3.1075` | DBH | 6–30 cm | 0.40 | 0.40 | 0.40 |
+| ***Shrub collection*** | | | | | | |
+| *Euonymus japonicus* | `Y = 0.0002·(10X)^2.5` | RCD | 0.6–5.3 cm | 0.30 | 0.22 | 0.22 |
+| *Rhododendron yedoense* f. *poukhanense* | `Y = 0.0003·(10X)^2.4` | RCD | 0.1–2.2 cm | 0.31 | 0.17 | 0.17 |
+| *Euonymus alatus* | `Y = 0.000022·(10X)^2.55` | RCD | 1.1–6.7 cm | 0.38 | 0.25 | 0.25 |
+| *Viburnum erosum* | `Y = 0.00026·(10X)^2.5` | RCD | 0.7–3.9 cm | 0.35 | 0.00 | 0.00 |
+| *Weigela subsessilis* | `Y = 0.00029·(10X)^2.4` | RCD | 0.6–3.9 cm | 0.30 | 0.24 | 0.24 |
+
+- Last three columns: annual diameter increment (cm yr⁻¹). **Zero = no prescribed growth** in that period.
+- `X` = DBH for trees, RCD for shrubs, in cm. Shrub equations fitted in mm are written as **`10X`**, with fitted limits converted to cm — the original relationship is preserved without refitting.
+- Site category is **descriptive metadata**; it does not select or modify coefficients (`test_site_category_does_not_select_coefficients`).
+- Full inventory: [`species_data.json`](species_data.json).
+
+---
+
+## 3. Calculation
+
+```
+B_i(t)    = a_i · [ q_i · D_i(t) ]^b_i
+C_i(t)    = B_i(t) · CF_i · n_i                                        … Eq. (1)
+C_site(t) = Σ C_i(t)        for i ∈ V (records retained after validation)
+
+A_required = 1.00 · Σ n_i(trees) + 0.25 · Σ n_i(shrubs)                … Eq. (2)
+             → calculation halts when A_required > A_site
+
+ρ_C(t) = C_site(t) / A_site                                            … Eq. (3)
+
+D_i(t) = D_i(0) + Σ_{s=1..t} g_i,p(s)                                  … Eq. (4)
+         p(s) = 1 (1–10 yr) · 2 (11–20 yr) · 3 (21–50 yr)
+
+v_i(t) = 1 if D_min,i ≤ D_i(t) ≤ D_max,i, else 0                       … Eq. (5)
+```
+
+| Symbol | Meaning |
+|---|---|
+| `D_i(t)` | DBH or RCD **in cm** at year `t`; current stock at `t = 0` |
+| `q_i` | Predictor scaling — `1` for cm-based tree equations, `10` for mm-based shrub equations |
+| `n_i`, `CF_i` | Represented count; record-level carbon fraction (including overrides) |
+| `v_i(t) = 0` | Post-calculation audit flag — estimate obtained by **extrapolation** |
+
+- Eq. (1) aggregates records **individually**, so the site total preserves the power law's nonlinearity.
+- `q_i` belongs to the equation record, so overrides (`a_i`, `b_i`, `CF_i`) never change it.
+- Eq. (3): total stock is **independent of site area**; density varies **inversely** with it.
+- Eq. (5) runs **after** calculation and only flags extrapolation — it never alters trajectories.
+- Domestic/international records use `Y_i = f_i(X_i, H_i)` via an AST allowlist (no Python `eval`). Storing no carbon fraction or increments, they apply a fixed **CF₀ = 0.5** and are excluded from scenarios.
+
+---
+
+## 4. Illustrative examples
+
+These examples illustrate **software behavior under the tested settings**, not agreement with independent field observations.
+
+### 4.1 Equation-library configuration and deployment
+
+<p align="center">
+  <img src="figures/paper/fig2_equation_library.png" alt="Equation-library management in FORECAST-SW" width="100%">
+</p>
+
+> **Figure 2.** Equation-library management in FORECAST-SW, including record configuration, parameter editing, and deployment of the validated library.
+
+The manager window shows the four collections with an editable record table exposing coefficients, carbon fractions, fitted limits, and growth rates as individual columns.
+
+**(a)** add a record · **(b)** remove a record · **(c)** modify regression coefficients · **(d)** deploy the validated JSON — by rebuilding the application or applying it to an existing installation.
+
+### 4.2 Integrated assessment of mixed tree and shrub inventories
+
+<p align="center">
+  <img src="figures/paper/fig3_assessment_workflow.png" alt="Integrated assessment workflow for Profile 1" width="100%">
+</p>
+
+> **Figure 3.** Integrated assessment workflow for Profile 1, including mixed tree and shrub inventory assessment, allometric-equation inspection, carbon-stock analysis, and 3D visualization.
+
+Profile 1 — three tree and two shrub species on a 20 m × 20 m site.
+
+**(a)** main workspace: inventory entry with current tree, shrub, and total stocks · **(b)** equation dialog: resolved equation, coefficients, carbon fraction, fitted range, increments · **(c)** 0–50-year trajectory and species contributions · **(d)** 3D stand configuration.
+
+### 4.3 Area-aware cross-site comparison
+
+Designed to separate variation from **inventory composition** from that introduced by **area normalization**.
+
+#### Table 3. Controlled inventories and outputs for the cross-site comparisons in Figure 4
+
+| Comparison | Profile | Site area (m²) | Tree records | Shrub records | Stock (kg C) | Density (kg C m⁻²) |
+|---|:---:|:---:|---|---|---:|---:|
+| **(1) Common area** | 1 | 400 | *P. densiflora* 5.0 × 30;<br>*Q. serrata* 4.0 × 20;<br>*Q. mongolica* 8.0 × 15 | *R. yedoense* f. *poukhanense* 1.2 × 40;<br>*W. subsessilis* 1.5 × 25 | 198.89 | 0.4972 |
+| | 2 | 400 | *P. densiflora* 7.0 × 60;<br>*Q. serrata* 8.0 × 25;<br>*Q. mongolica* 10.0 × 15 | *W. subsessilis* 1.5 × 25 | **824.88** | 2.0622 |
+| | 3 | 400 | *Q. serrata* 4.0 × 20;<br>*Q. mongolica* 6.0 × 10 | *R. yedoense* f. *poukhanense* 1.8 × 120;<br>*W. subsessilis* 2.0 × 90 | **109.08** | 0.2727 |
+| **(2) Common inventory** | 1 | 400 | *P. densiflora* 5.0 × 30;<br>*Q. serrata* 4.0 × 20;<br>*Q. mongolica* 8.0 × 15 | *R. yedoense* f. *poukhanense* 1.2 × 40;<br>*W. subsessilis* 1.5 × 25 | 198.89 | **0.4972** |
+| | 2 | 500 | *(unchanged)* | *(unchanged)* | 198.89 | **0.3978** |
+| | 3 | 600 | *(unchanged)* | *(unchanged)* | 198.89 | **0.3315** |
+
+<sub>Diameters are DBH for trees or RCD for shrubs, in cm. The multiplier following each diameter denotes the represented count; profiles are numbered within each comparison.</sub>
+
+<p align="center">
+  <img src="figures/paper/fig4_site_comparison.png" alt="Cross-site comparison of total carbon stock and carbon density" width="100%">
+</p>
+
+> **Figure 4.** Cross-site comparison of total carbon stock and area-normalized carbon density using three inventories at a common site area and one unchanged inventory across different site areas.
+
+- **(a) Common area** — holding site area at 400 m² isolates inventory composition: **109.08 → 824.88 kg C** across the three inventories, reflecting differences in species composition, initial diameter, and represented count.
+- **(b) Common inventory** — applying Profile 1 to 400 / 500 / 600 m² isolates site area: total stock **stays 198.89 kg C**, density falls **0.4972 → 0.3978 → 0.3315 kg C m⁻²**.
+
+### 4.4 Deterministic growth scenario visualization
+
+<p align="center">
+  <img src="figures/paper/fig5_growth_scenario.png" alt="Deterministic growth scenario for Profile 1" width="100%">
+</p>
+
+> **Figure 5.** Deterministic growth scenario for Profile 1 at years 0, 20, and 50, showing tree, shrub, and total carbon stocks together with the corresponding 3D stand visualization.
+
+| Year | Trees (kg C) | Shrubs (kg C) | **Total (kg C)** |
+|:---:|---:|---:|---:|
+| 0 | 194.15 | 4.74 | **198.89** |
+| 20 | 1,155.21 | 204.97 | **1,360.18** |
+| 50 | 11,686.10 | 1,008.04 | **12,694.14** |
+
+Later values may include **extrapolated estimates** where projected diameters exceed the fitted ranges. The 3D views are software-defined scenario geometry, not measured plant architecture.
+
+### 4.5 Two-level record validation and planting-area safeguard
+
+#### Table 4. Test cases and outcomes for diameter-range validation and the planting-area safeguard
+
+| Check | Test case | Criterion | Outcome |
+|---|---|---|---|
+| ***(a) Diameter-range validation*** | | | |
+| Tree entry | *P. densiflora*, DBH = 20 cm | Fitted range: 1–15 cm | **Rejected** |
+| Shrub entry | *W. subsessilis*, RCD = 5.0 cm | Fitted range: 0.6–3.9 cm | **Rejected** |
+| Fitted limits | DBH = 1.00 or 15.00 cm | Limits inclusive | **Accepted** |
+| Outside limits | DBH = 0.99 or 15.01 cm | Outside fitted range | **Rejected** |
+| Calculation level | Out-of-range record bypassing entry validation | Fitted-range check | **Excluded before calculation** |
+| ***(b) Planting-area safeguard (A_site = 100 m²)*** | | | |
+| Area exceeded | `A_required = 105.00 m²` | `A_required > A_site` | **Calculation halted** |
+| Area boundary | `A_required = 100.00 m²` | `A_required = A_site` | **Accepted** |
+
+Values outside the fitted ranges were rejected and values at the limits accepted; records bypassing the entry check were excluded during calculation; the area safeguard halted calculation only when the requirement **exceeded** the site area.
+
+### 4.6 Result reporting
+
+<p align="center">
+  <img src="figures/paper/fig6_xlsx_export.png" alt="Example XLSX output from FORECAST-SW" width="100%">
+</p>
+
+> **Figure 6.** Example XLSX output from FORECAST-SW showing site-level carbon-stock projections and species-level carbon contributions.
+
+**(a)** annual tree, shrub, and total stocks per profile across the scenario period · **(b)** species-level stocks and relative contributions. Additional worksheets hold site-comparison results and associated figures.
+
+---
+
+## 5. Install and run
+
+| Executable | Role |
+|---|---|
+| `FORECAST-SW.exe` | **Assessment Application** — site assessment, comparison, scenarios |
+| `FORECAST-SW-Equation-Library-Manager.exe` | **Equation Library Manager** — equation editing, validation, deployment |
+
+Both are installed by `FORECAST-SW_Setup_1.0.exe` (no Python required). From source:
 
 ```powershell
 pip install -r requirements.txt
+python main.py              # language-selection dialog
+python main.py --lang en    # English
+python main.py --lang ko    # Korean
 ```
-
-Python **3.10 or later** is required, because the 3D visualization depends on
-`pyvista >= 0.48`. Everything else runs on 3.9.
-
-The build scripts (`build_exe.py`, `build_updater.py`) do **not** require a manual
-PyInstaller installation: they create a dedicated build virtual environment at
-`~/.carboncalc_build_venv` and install what they need there. The first build takes
-several minutes; later builds reuse the environment.
-
-> **Conda users:** activate the environment before building
-> (`conda activate <env>`, then `python build_exe.py`). Running the interpreter by
-> its full path without activating leaves `<env>/Library/bin` off `PATH`, so
-> PyInstaller cannot find `ffi.dll` and the resulting executable fails at startup
-> with `ImportError: DLL load failed while importing _ctypes`.
 
 ---
 
-## 1. Run from source
+## 6. Edit and deploy the equation library
+
+The Manager opens `species_data.json` as an editable table across four tabs (Figure 2), with validation before saving and an automatic `.bak` backup. It bundles the full core source, so it runs standalone.
+
+| Method | Description | Python required |
+|---|---|:---:|
+| **Rebuild the executable** | Rebuild `FORECAST-SW.exe` from the new `species_data.json` | 3.10+ |
+| **Apply the JSON** | Copy `species_data.json` next to the existing `FORECAST-SW.exe` | No |
+
+> When adding a species, fill in the scientific-name column so English mode displays it.
+
+---
+
+## 7. Build
 
 ```powershell
-python main.py
-python main.py --lang en     # start in English, skipping the language prompt
-python main.py --lang ko     # start in Korean
+python build_exe.py                  # onefile (default) · --onedir · --debug
+python build_exe.py --clean-cache    # remove build/ and dist/ first
+python build_exe.py --rebuild-venv   # force-recreate the build venv
+python build_updater.py              # Equation Library Manager (or build_library_manager.bat)
 ```
 
-Carbon1 (native restoration species) and Carbon2 (domestic and international
-species) are managed as per-site tabs in a single window.
+`pyinstaller` need not be installed separately — the scripts create a dedicated venv (`~\.carboncalc_build_venv`); only the first build takes a few minutes. `species_data.json` is bundled automatically.
 
-On first start the application presents an English-language selection dialog
-with **English** selected by default. The choice is stored under the FORECAST-SW
-v1.0 settings key and reused; it can be changed at any time from the
-**Language** menu, which restarts the application in the selected language.
-Legacy language preferences from pre-FORECAST-SW builds are not imported.
+**Installer (optional):** `build_exe.py --onedir` → `build_updater.py` → compile `installer.iss` with [Inno Setup 6](https://jrsoftware.org/isdl.php) → `installer_output\FORECAST-SW_Setup_1.0.exe`.
 
 ---
 
-## 2. Build the FORECAST-SW Assessment Application
-
-```powershell
-python build_exe.py              # onefile (single executable) — default
-python build_exe.py --onedir     # folder layout (faster startup)
-python build_exe.py --debug      # show a console window (for diagnosing errors)
-python build_exe.py --upx        # enable UPX compression (smaller output)
-python build_exe.py --clean-cache        # remove build/ and dist/ first
-python build_exe.py --rebuild-venv       # force re-creation of the build venv
-```
-
-- Output: `dist/FORECAST-SW.exe` (onefile) or `dist/FORECAST-SW/` (onedir)
-- If `species_data.json` is present in the project root it is bundled into the
-  executable and loaded at runtime.
-- Use `--rebuild-venv` whenever `requirements.txt` changes. The build venv is
-  considered reusable when PyInstaller and PyQt5 import successfully, so a venv
-  built for an older dependency set is otherwise silently reused.
-- If the executable exits immediately, rebuild with `--debug` and read the
-  console output.
-
----
-
-## 3. Build the FORECAST-SW Equation Library Manager
-
-```powershell
-python build_updater.py
-```
-
-or, on Windows:
-
-```powershell
-build_library_manager.bat
-```
-
-- Output: `dist/FORECAST-SW-Equation-Library-Manager.exe`
-- This executable bundles the **entire source** of the core software
-  (`carbon_calculator`, `main.py`, `build_exe.py`, ...), so it can be distributed
-  on its own.
-- On launch it opens `species_data.json` in a **table editor** (four tabs — trees, shrubs,
-  domestic, international; double-click cells to edit; add/delete species; validation before
-  saving; a `.bak` backup on save). The interface provides a larger default font,
-  high-DPI-aware scaling, expanded table rows and controls, a four-step workflow guide,
-  and visually distinct primary and destructive actions. After editing, it offers two ways
-  to apply the data:
-  1. **Rebuild executable** — takes a new `species_data.json` and rebuilds the core
-     executable from the bundled source (requires Python 3.10+ on the machine).
-  2. **Apply JSON** — copies `species_data.json` next to an existing executable
-     (no Python required; effective from the next launch).
-
----
-
-## 4. Windows installer — optional
-
-1. Build the Assessment Application in folder form: `python build_exe.py --onedir`
-2. Build the Equation Library Manager: `python build_updater.py`
-3. Install [Inno Setup 6](https://jrsoftware.org/isdl.php)
-4. Compile with either
-   - Inno Setup Compiler: open `installer.iss`, then `Build > Compile`, or
-   - the command line: `"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss`
-5. Output: `installer_output/FORECAST-SW_Setup_1.0.exe`. The installer includes
-   both executables and creates separate Start-menu shortcuts for their roles.
-
----
-
-## 5. Updating the species dataset
-
-Edit species, coefficients, equations, and ranges in the FORECAST-SW Equation
-Library Manager (`FORECAST-SW-Equation-Library-Manager.exe`) and save
-(recommended), or edit `species_data.json` by hand and rebuild with
-`python build_exe.py`. Apply it to an already distributed Assessment Application
-through the manager (Section 3). When adding a species, fill in the
-scientific-name column so that English mode can label it.
-
-`species_data.json` also carries the English labels:
-
-- `SPECIES_EN` — base species name → scientific name. Qualifiers such as
-  `(지상부)` or `(전체, 경남)` are translated automatically
-  (`후박나무(지상부)` → *Machilus thunbergii* (aboveground)).
-- `ENVIRONMENTS_EN` — English labels displayed by the site-category metadata
-  control. These labels do not select coefficients.
-
-When adding a species, add its scientific name to `SPECIES_EN` as well; otherwise
-English mode falls back to the Korean name rather than inventing a binomial.
-
----
-
-## 6. Verify the scientific core
-
-Run the tracked regression suite before building or modifying the equation
-library:
+## 8. Tests
 
 ```powershell
 python -m unittest discover -s tests -v
 ```
 
-The suite checks release-library counts, JSON parsing and data licensing,
-site-category invariance, the allometric calculation, exact stem-count
-scaling, inclusive diameter boundaries, deterministic year-zero scenarios,
-shrub unit conversion, every compatibility equation, and rejection of unsafe
-equation syntax. It also verifies acceptance at the site-area boundary and
-rejection when the combined tree and shrub footprint exceeds it. The same suite runs on Windows with Python 3.10 and 3.11
-through the repository's continuous-integration workflow. The evaluated
-Windows build environment and local artifact checksums are recorded in
-[BUILD_VERIFICATION.md](BUILD_VERIFICATION.md).
+22 regression tests reproduce Tables 3–4 and Figures 4–5: library record counts, area-normalized densities (`0.4972 / 0.3978 / 0.3315`), proportional scaling with represented count, diameter boundaries, scenario repeatability and year-zero agreement, shrub mm↔cm equivalence, execution of all 55 compatibility equations, and rejection of unsafe syntax. The same suite runs in CI on Windows with Python 3.10 and 3.11. Build environment and checksums: [BUILD_VERIFICATION.md](BUILD_VERIFICATION.md).
 
 ---
 
-## Troubleshooting
+## 9. Repository layout
 
-| Symptom | Fix |
-|---------|-----|
-| `ModuleNotFoundError: No module named 'PyQt5'` | `pip install -r requirements.txt` |
-| `Could not find a version that satisfies pyvista>=0.48` | The environment is Python 3.9 or older; the 3D view needs 3.10+ |
-| Built executable exits with `DLL load failed while importing _ctypes` | Activate the conda environment before building (see Prerequisites) |
-| 3D view missing from a built executable | Rebuild with `python build_exe.py --rebuild-venv` |
-| PyInstaller errors during the build | `python build_exe.py --rebuild-venv` |
-| Korean text renders as boxes | Confirm the Windows font "Malgun Gothic" is installed |
-| Executable closes immediately | Rebuild with `python build_exe.py --debug` and read the console |
-| Text too large or too small | Adjust `FONT_SIZE_DELTA` in `carbon_calculator/font_config.py` |
+```
+├── main.py                        ← entry point
+├── species_data.json              ← equation library (77 records) — Table 2
+├── build_exe.py / build_updater.py / build_library_manager.bat
+├── updater_app.py                 ← Equation Library Manager — Figure 2, stages 1–3
+├── installer.iss                  ← Inno Setup installer script
+├── carbon_calculator/
+│   ├── calculations.py                calculation engine — Eq. (1), (3), stage 6
+│   ├── input_limits.py                planting-area safeguard — Eq. (2), stage 5
+│   ├── equation_eval.py               expression evaluation (AST allowlist)
+│   ├── data.py / data2.py             coefficients and equations (JSON-load fallback)
+│   ├── main_window.py                 site assessment — Figure 3, stages 4–7
+│   ├── combined_window.py             integrated window, per-site tabs — Figure 4
+│   ├── tree_simulation/               3D growth visualization — Figure 5
+│   ├── excel_export.py                XLSX export — Figure 6, stage 8
+│   ├── main_window2.py                domestic/international screen (not exposed in v1.0)
+│   ├── plotting.py / widgets.py / i18n.py / translations.py
+│   └── theme.py / font_config.py / ui_scale.py
+├── tests/test_core.py             ← 22 regression tests — Tables 3–4
+└── figures/paper/                 ← Figures 1–6 as published
+```
+
+**Troubleshooting** — missing PyQt5: `pip install -r requirements.txt` · PyInstaller build error: `--rebuild-venv` · exe exits at launch: rebuild with `--debug` and read the console · broken Korean glyphs: install "Malgun Gothic" · text too large/small: adjust `FONT_SIZE_DELTA` in `carbon_calculator\font_config.py`.
 
 ---
 
-## License
+## 10. Citation
 
-The source code, build scripts, documentation, and repository figures are
-available under the [MIT License](LICENSE). The scientific equation library in
-`species_data.json` is provided under KOGL Type 1 (Attribution); see
-[DATA_LICENSE.md](DATA_LICENSE.md). Individual equations should also retain the
-bibliographic attribution of their source studies.
+> Jeong, K., Jo, G., Kim, J., Kim, H.-K., Kim, C.-B., & Lee, E.
+> *FORECAST-SW: Carbon-stock assessment and growth scenario analysis for forest restoration plantings.* SoftwareX.
+
+Machine-readable metadata: [`CITATION.cff`](CITATION.cff). **When using an individual allometric equation, also cite its original source publication.**
+
+**Contact**: [kc.jeong-isw@cbnu.ac.kr](mailto:kc.jeong-isw@cbnu.ac.kr) · [gc.jo-isw@cbnu.ac.kr](mailto:gc.jo-isw@cbnu.ac.kr)
 
 ---
 
-한국어 설명은 [README.md](README.md) 를 참고하세요.
+## 11. License
+
+| Scope | License |
+|---|---|
+| Source code, build scripts, documentation, repository figures | [MIT License](LICENSE) |
+| Scientific equation library in `species_data.json` | [KOGL Type 1 (Attribution)](DATA_LICENSE.md) |
+
+Individual allometric equations must retain the bibliographic information of their original sources — see [DATA_LICENSE.md](DATA_LICENSE.md).
+
+---
+
+<sub>Supported by IPET (RS-2024-00398561, MAFRA), IITP (IITP-2026-RS-2020-II201462, MSIT), and NRF (RS-2025-25430681, Ministry of Education), Republic of Korea.</sub>

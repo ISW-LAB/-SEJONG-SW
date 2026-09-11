@@ -9,7 +9,7 @@ documentation, regression tests, and Windows distribution artifacts.
 
 - Primary workflow: 22 native records (seven trees and 15 shrubs)
 - Compatibility library: 55 records (30 domestic and 25 international)
-- Complete library: 77 named records implementing 79 executable equations
+- Complete library: 77 equation records covering 67 distinct scientific names
 - Supported release environment: Windows 10 and 11 with Python 3.10 or newer
 - User outputs: current stock summaries, deterministic 0-50-year scenarios,
   cross-site comparisons, 2-D and 3-D views, and XLSX reports

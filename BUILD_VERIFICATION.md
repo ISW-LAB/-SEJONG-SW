@@ -1,6 +1,7 @@
 # FORECAST-SW v1.0 build verification
 
-Verification date: 2026-09-07 (Asia/Seoul)
+Build and artifact verification: 2026-09-07 (Asia/Seoul)
+Test suite re-verified: 2026-09-11 (Asia/Seoul)
 
 ## Environment
 
@@ -12,10 +13,14 @@ Verification date: 2026-09-07 (Asia/Seoul)
 
 ## Checks performed
 
-1. `python -m unittest discover -s tests -v`: 18 tests passed, including the
+1. `python -m unittest discover -s tests -v`: 22 tests passed, including the
    shared-centimeter DBH/RCD contract, legacy shrub-equation equivalence,
    combined planting-area boundary and over-limit cases, area-normalized
    carbon density, and normalized-density values exported to XLSX.
+   The count above is checked by the suite itself: the test
+   `test_build_verification_records_the_current_suite_size` discovers the tests
+   at run time and fails if this document and the suite disagree, so adding or
+   removing a test requires updating this line in the same change.
 2. `python build_exe.py --onedir`: completed successfully.
 3. `dist/FORECAST-SW/FORECAST-SW.exe`: English-interface startup smoke test
    passed.
